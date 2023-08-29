@@ -15,7 +15,6 @@ fn main() {
     for x in 0..image_height {
         write!(stderr, "\rScanlines remaining: {:3}", image_height - x).unwrap();
         stderr.flush().unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(1));
 
         for y in 0..image_width {
             let r: f32 = x as f32 / (image_height as f32 - 1.);
