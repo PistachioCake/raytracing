@@ -3,7 +3,21 @@ use std::io::{BufWriter, Write};
 use raytracing::ray::Ray;
 use raytracing::units::{write_color, Color, Point, Vector};
 
+fn hit_sphere(center: &Point, radius: f32, ray: &Ray) -> bool {
+    let oc = ray.origin - *center;
+    let a = ray.direct.dot(ray.direct);
+    let b = oc.dot(ray.direct) * 2.;
+    let c = oc.dot(oc) - radius * radius;
+
+    let discr = b * b - 4. * a * c;
+    discr >= 0.
+}
+
 fn ray_color(ray: &Ray) -> Color {
+    if hit_sphere(&Point::new(0., 0., -1.), 0.5, ray) {
+        return Color::new(1., 0., 0.);
+    }
+
     let unit_direct = ray.direct.normalize();
     let a = (unit_direct.y + 1.) / 2.;
     Color::new(1., 1., 1.) * (1. - a) + Color::new(0.5, 0.7, 1.0) * a
