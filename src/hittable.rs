@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     ray::Ray,
     units::{Point, Vector},
@@ -8,6 +10,19 @@ pub struct HitRecord {
     pub normal: Vector,
     pub t: f32,
     pub front_face: bool,
+}
+
+pub trait Hittable {
+    fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord>;
+}
+
+pub struct Sphere {
+    pub center: Point,
+    pub radius: f32,
+}
+
+pub struct HittableList {
+    pub objects: Vec<Rc<dyn Hittable>>,
 }
 
 impl HitRecord {
@@ -28,15 +43,6 @@ impl HitRecord {
             front_face,
         }
     }
-}
-
-pub trait Hittable {
-    fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord>;
-}
-
-pub struct Sphere {
-    pub center: Point,
-    pub radius: f32,
 }
 
 impl Hittable for Sphere {
@@ -70,5 +76,31 @@ impl Hittable for Sphere {
         let outward_normal = (p - self.center) / self.radius;
 
         Some(HitRecord::new(ray, p, outward_normal, t))
+    }
+}
+
+impl HittableList {
+    pub fn clear(&mut self) {
+        self.objects.clear()
+    }
+
+    pub fn add(&mut self, object: Rc<dyn Hittable>) {
+        self.objects.push(object)
+    }
+}
+
+impl Hittable for HittableList {
+    fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord> {
+        let mut hit_record = None;
+        let closest_t = tmax;
+
+        for object in &self.objects {
+            let hit = object.hit(ray, tmin, closest_t);
+            if hit.is_some() {
+                hit_record = hit;
+            }
+        }
+
+        hit_record
     }
 }
