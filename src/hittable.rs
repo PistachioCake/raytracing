@@ -13,7 +13,7 @@ pub struct HitRecord {
 }
 
 pub trait Hittable {
-    fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord>;
+    fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord>;
 }
 
 pub struct Sphere {
@@ -24,6 +24,12 @@ pub struct Sphere {
 #[derive(Default)]
 pub struct HittableList {
     pub objects: Vec<Rc<dyn Hittable>>,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Interval<T> {
+    pub min: T,
+    pub max: T,
 }
 
 impl HitRecord {
@@ -47,7 +53,7 @@ impl HitRecord {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord> {
         let oc = ray.origin - self.center;
         let a = ray.direct.length_squared();
         let half_b = oc.dot(ray.direct);
@@ -59,18 +65,12 @@ impl Hittable for Sphere {
         }
 
         // find the nearest root that lies in the acceptable range
-        let t = {
-            let r1 = (-half_b - discr.sqrt()) / a;
-            if tmin < r1 && r1 < tmax {
-                r1
-            } else {
-                let r2 = (-half_b + discr.sqrt()) / a;
-                if tmin < r2 && r2 < tmax {
-                    r2
-                } else {
-                    return None;
-                }
-            }
+        let t = [(-half_b - discr.sqrt()) / a, (-half_b + discr.sqrt()) / a]
+            .into_iter()
+            .find(|&root| ray_t.surrounds(root));
+        let t = match t {
+            Some(t) => t,
+            None => return None,
         };
 
         let p = ray.at(t);
@@ -97,17 +97,61 @@ impl HittableList {
 }
 
 impl Hittable for HittableList {
-    fn hit(&self, ray: &Ray, tmin: f32, tmax: f32) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, mut ray_t: Interval<f32>) -> Option<HitRecord> {
         let mut hit_record = None;
-        let closest_t = tmax;
 
         for object in &self.objects {
-            let hit = object.hit(ray, tmin, closest_t);
-            if hit.is_some() {
+            let hit = object.hit(ray, ray_t);
+            if let Some(ref rec) = hit {
+                ray_t.max = rec.t;
                 hit_record = hit;
             }
         }
 
         hit_record
     }
+}
+
+impl<T: PartialOrd> Interval<T> {
+    pub fn contains(self, x: T) -> bool {
+        self.min <= x && x <= self.max
+    }
+
+    pub fn surrounds(self, x: T) -> bool {
+        self.min < x && x < self.max
+    }
+}
+
+impl Interval<f32> {
+    pub const EMPTY: Self = Self {
+        min: f32::INFINITY,
+        max: f32::NEG_INFINITY,
+    };
+
+    pub const UNIVERSE: Self = Self {
+        min: f32::NEG_INFINITY,
+        max: f32::INFINITY,
+    };
+
+    pub const POSITIVE: Self = Self {
+        min: 0.,
+        max: f32::INFINITY,
+    };
+}
+
+impl Interval<f64> {
+    pub const EMPTY: Self = Self {
+        min: f64::INFINITY,
+        max: f64::NEG_INFINITY,
+    };
+
+    pub const UNIVERSE: Self = Self {
+        min: f64::NEG_INFINITY,
+        max: f64::INFINITY,
+    };
+
+    pub const POSITIVE: Self = Self {
+        min: 0.,
+        max: f64::INFINITY,
+    };
 }

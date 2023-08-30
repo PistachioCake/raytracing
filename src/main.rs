@@ -1,12 +1,12 @@
 use std::io::{BufWriter, Write};
 use std::rc::Rc;
 
-use raytracing::hittable::{Hittable, HittableList, Sphere};
+use raytracing::hittable::{Hittable, HittableList, Interval, Sphere};
 use raytracing::ray::Ray;
 use raytracing::units::{write_color, Color, Point, Vector};
 
 fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
-    let hit = world.hit(ray, 0., f32::INFINITY);
+    let hit = world.hit(ray, Interval::<f32>::POSITIVE);
     if let Some(hit) = hit {
         return ((hit.normal + Vector::new(1., 1., 1.)) / 2.).cast();
     }
@@ -24,7 +24,6 @@ fn main() {
     let image_height = image_height.max(1);
 
     // world
-
     let objects: Vec<Rc<dyn Hittable>> = vec![
         Rc::new(Sphere {
             center: Point::new(0., 0., -1.),
