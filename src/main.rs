@@ -6,15 +6,15 @@ use raytracing::units::{write_color, Color, Point, Vector};
 fn hit_sphere(center: &Point, radius: f32, ray: &Ray) -> f32 {
     let oc = ray.origin - *center;
     let a = ray.direct.length_squared();
-    let b = oc.dot(ray.direct) * 2.;
+    let half_b = oc.dot(ray.direct);
     let c = oc.length_squared() - radius * radius;
 
-    let discr = b * b - 4. * a * c;
+    let discr = half_b * half_b - a * c;
 
     if discr < 0. {
         -1.
     } else {
-        (-b - discr.sqrt()) / (2. * a)
+        (-half_b - discr.sqrt()) / a
     }
 }
 
