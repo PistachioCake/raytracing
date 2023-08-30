@@ -3,19 +3,26 @@ use std::io::{BufWriter, Write};
 use raytracing::ray::Ray;
 use raytracing::units::{write_color, Color, Point, Vector};
 
-fn hit_sphere(center: &Point, radius: f32, ray: &Ray) -> bool {
+fn hit_sphere(center: &Point, radius: f32, ray: &Ray) -> f32 {
     let oc = ray.origin - *center;
-    let a = ray.direct.dot(ray.direct);
+    let a = ray.direct.length_squared();
     let b = oc.dot(ray.direct) * 2.;
-    let c = oc.dot(oc) - radius * radius;
+    let c = oc.length_squared() - radius * radius;
 
     let discr = b * b - 4. * a * c;
-    discr >= 0.
+
+    if discr < 0. {
+        -1.
+    } else {
+        (-b - discr.sqrt()) / (2. * a)
+    }
 }
 
 fn ray_color(ray: &Ray) -> Color {
-    if hit_sphere(&Point::new(0., 0., -1.), 0.5, ray) {
-        return Color::new(1., 0., 0.);
+    let t = hit_sphere(&Point::new(0., 0., -1.), 0.5, ray);
+    if t > 0. {
+        let normal = (ray.at(t) - Point::new(0., 0., -1.)).normalize();
+        return Color::new(normal.x + 1., normal.y + 1., normal.z + 1.) / 2.;
     }
 
     let unit_direct = ray.direct.normalize();
@@ -61,10 +68,13 @@ fn main() {
         stderr.flush().unwrap();
 
         for j in 0..image_width {
-            let origin = pixel_00_loc + pixel_delta_u * j as f32 + pixel_delta_v * i as f32;
-            let direct = origin - camera_center;
+            let center = pixel_00_loc + pixel_delta_u * j as f32 + pixel_delta_v * i as f32;
+            let direct = center - camera_center;
 
-            let ray = Ray { origin, direct };
+            let ray = Ray {
+                origin: camera_center,
+                direct,
+            };
 
             let color = ray_color(&ray);
             write_color(color, &mut stdout);

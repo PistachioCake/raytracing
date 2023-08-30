@@ -1,5 +1,6 @@
 use crate::units::{Point, Vector};
 
+#[derive(Debug)]
 pub struct Ray {
     pub origin: Point,
     pub direct: Vector,
