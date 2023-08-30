@@ -1,28 +1,14 @@
 use std::io::{BufWriter, Write};
+use std::rc::Rc;
 
+use raytracing::hittable::{Hittable, HittableList, Sphere};
 use raytracing::ray::Ray;
 use raytracing::units::{write_color, Color, Point, Vector};
 
-fn hit_sphere(center: &Point, radius: f32, ray: &Ray) -> f32 {
-    let oc = ray.origin - *center;
-    let a = ray.direct.length_squared();
-    let half_b = oc.dot(ray.direct);
-    let c = oc.length_squared() - radius * radius;
-
-    let discr = half_b * half_b - a * c;
-
-    if discr < 0. {
-        -1.
-    } else {
-        (-half_b - discr.sqrt()) / a
-    }
-}
-
-fn ray_color(ray: &Ray) -> Color {
-    let t = hit_sphere(&Point::new(0., 0., -1.), 0.5, ray);
-    if t > 0. {
-        let normal = (ray.at(t) - Point::new(0., 0., -1.)).normalize();
-        return Color::new(normal.x + 1., normal.y + 1., normal.z + 1.) / 2.;
+fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
+    let hit = world.hit(ray, 0., f32::INFINITY);
+    if let Some(hit) = hit {
+        return ((hit.normal + Vector::new(1., 1., 1.)) / 2.).cast();
     }
 
     let unit_direct = ray.direct.normalize();
@@ -36,6 +22,21 @@ fn main() {
     let image_width = 400;
     let image_height = (image_width as f32 / aspect_ratio).floor() as i32;
     let image_height = image_height.max(1);
+
+    // world
+
+    let objects: Vec<Rc<dyn Hittable>> = vec![
+        Rc::new(Sphere {
+            center: Point::new(0., 0., -1.),
+            radius: 0.5,
+        }),
+        Rc::new(Sphere {
+            center: Point::new(0., -100.5, -1.),
+            radius: 100.,
+        }),
+    ];
+
+    let world = HittableList { objects };
 
     // camera
     let focal_length = 1.;
@@ -76,7 +77,7 @@ fn main() {
                 direct,
             };
 
-            let color = ray_color(&ray);
+            let color = ray_color(&ray, &world);
             write_color(color, &mut stdout);
         }
     }

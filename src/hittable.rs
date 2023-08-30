@@ -21,6 +21,7 @@ pub struct Sphere {
     pub radius: f32,
 }
 
+#[derive(Default)]
 pub struct HittableList {
     pub objects: Vec<Rc<dyn Hittable>>,
 }
@@ -80,6 +81,12 @@ impl Hittable for Sphere {
 }
 
 impl HittableList {
+    pub fn new() -> Self {
+        Self {
+            objects: Vec::new(),
+        }
+    }
+
     pub fn clear(&mut self) {
         self.objects.clear()
     }
