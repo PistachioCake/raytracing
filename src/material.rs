@@ -14,6 +14,7 @@ pub struct Lambertian {
 
 pub struct Metal {
     pub albedo: Color,
+    pub fuzz: f32,
 }
 
 impl Material for Lambertian {
@@ -40,12 +41,11 @@ impl Material for Metal {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
         let reflected = ray.direct - hit.normal * 2. * ray.direct.dot(hit.normal);
 
-        Some((
-            self.albedo,
-            Ray {
-                origin: hit.p,
-                direct: reflected,
-            },
-        ))
+        let scattered = Ray {
+            origin: hit.p,
+            direct: reflected + random_unit_vector() * self.fuzz,
+        };
+
+        Some((self.albedo, scattered))
     }
 }
