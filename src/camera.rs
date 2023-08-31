@@ -19,10 +19,16 @@ pub struct Camera {
     pixel_delta_v: Vector,
 
     samples_per_pixel: i32,
+    max_depth: i32,
 }
 
 impl Camera {
-    pub fn new(image_width: i32, image_height: i32, samples_per_pixel: Option<i32>) -> Self {
+    pub fn new(
+        image_width: i32,
+        image_height: i32,
+        samples_per_pixel: Option<i32>,
+        max_depth: Option<i32>,
+    ) -> Self {
         let focal_length = 1.;
         let viewport_height = 2.;
         let viewport_width = viewport_height * image_width as f32 / image_height as f32;
@@ -43,6 +49,7 @@ impl Camera {
         let pixel_00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) / 2.;
 
         let samples_per_pixel = samples_per_pixel.unwrap_or(10);
+        let max_depth = max_depth.unwrap_or(10);
 
         Self {
             image_width,
@@ -52,6 +59,7 @@ impl Camera {
             pixel_delta_u,
             pixel_delta_v,
             samples_per_pixel,
+            max_depth,
         }
     }
 
@@ -76,7 +84,7 @@ impl Camera {
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
 
-                    color += Camera::ray_color(&ray, world);
+                    color += Camera::ray_color(&ray, world, self.max_depth);
                 }
 
                 color /= self.samples_per_pixel as f32;
@@ -100,7 +108,11 @@ impl Camera {
         }
     }
 
-    fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
+    fn ray_color(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
+        if depth <= 0 {
+            return Color::ZERO;
+        }
+
         let hit = world.hit(ray, Interval::<f32>::POSITIVE);
         if let Some(hit) = hit {
             let bounce_direction = random_on_hemisphere(&hit.normal);
@@ -110,6 +122,7 @@ impl Camera {
                     direct: bounce_direction,
                 },
                 world,
+                depth - 1,
             ) / 2.;
         }
 

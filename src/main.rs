@@ -26,7 +26,7 @@ fn main() {
     let world = HittableList { objects };
 
     // camera
-    let camera = Camera::new(image_width, image_height, Some(100));
+    let camera = Camera::new(image_width, image_height, Some(100), Some(50));
 
     camera.render(&world);
 }
