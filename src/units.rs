@@ -9,9 +9,9 @@ impl Unit for ColorSpace {
 
 pub type Color = Vector3<ColorSpace>;
 
-pub fn write_color(c: Color, out: &mut dyn Write) {
+pub fn write_color(out: &mut dyn Write, c: Color) {
     let floats = c.as_array();
-    let ints = floats.map(|f| (f * 255.999).floor() as u32);
+    let ints = floats.map(|f| (f.clamp(0., 1.) * 255.999).floor() as u32);
 
     write!(out, "{} {} {}\n", ints[0], ints[1], ints[2]).unwrap()
 }

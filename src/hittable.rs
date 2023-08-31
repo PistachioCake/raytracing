@@ -122,6 +122,15 @@ impl<T: PartialOrd> Interval<T> {
     }
 }
 
+impl<T: Ord> Interval<T> {
+    // cannot implement because of compiler error
+    // "upstream crates may add a new impl of trait `std::cmp::Ord` for type `f32`/`f64`"
+    //
+    // pub fn clamp(self, x: T) -> T {
+    //     x.clamp(self.min, self.max)
+    // }
+}
+
 impl Interval<f32> {
     pub const EMPTY: Self = Self {
         min: f32::INFINITY,
@@ -137,6 +146,10 @@ impl Interval<f32> {
         min: 0.,
         max: f32::INFINITY,
     };
+
+    pub fn clamp(self, x: f32) -> f32 {
+        x.clamp(self.min, self.max)
+    }
 }
 
 impl Interval<f64> {
@@ -154,4 +167,8 @@ impl Interval<f64> {
         min: 0.,
         max: f64::INFINITY,
     };
+
+    pub fn clamp(self, x: f64) -> f64 {
+        x.clamp(self.min, self.max)
+    }
 }
