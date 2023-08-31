@@ -1,7 +1,7 @@
 use crate::{
     hittable::HitRecord,
     ray::Ray,
-    units::{random_unit_vector, Color},
+    units::{random_unit_vector, reflect, refract, Color},
 };
 
 pub trait Material {
@@ -15,6 +15,10 @@ pub struct Lambertian {
 pub struct Metal {
     pub albedo: Color,
     pub fuzz: f32,
+}
+
+pub struct Dielectric {
+    pub ir: f32,
 }
 
 impl Material for Lambertian {
@@ -39,7 +43,7 @@ impl Material for Lambertian {
 
 impl Material for Metal {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
-        let reflected = ray.direct - hit.normal * 2. * ray.direct.dot(hit.normal);
+        let reflected = reflect(&ray.direct, &hit.normal);
 
         let scattered = Ray {
             origin: hit.p,
@@ -47,5 +51,26 @@ impl Material for Metal {
         };
 
         Some((self.albedo, scattered))
+    }
+}
+
+impl Material for Dielectric {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
+        let attenuation = Color::ONE;
+        let refraction_ratio = if hit.front_face {
+            self.ir.recip()
+        } else {
+            self.ir
+        };
+
+        let unit_direction = ray.direct.normalize();
+        let refracted = refract(&unit_direction, &hit.normal, refraction_ratio);
+
+        let scattered = Ray {
+            origin: hit.p,
+            direct: refracted,
+        };
+
+        Some((attenuation, scattered))
     }
 }

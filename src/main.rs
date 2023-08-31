@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use raytracing::camera::Camera;
 use raytracing::hittable::{Hittable, HittableList, Sphere};
-use raytracing::material::{Lambertian, Metal};
+use raytracing::material::{Dielectric, Lambertian, Metal};
 use raytracing::units::{Color, Point};
 
 fn main() {
@@ -24,17 +24,12 @@ fn main() {
         Rc::new(Sphere {
             center: Point::new(0., 0., -1.),
             radius: 0.5,
-            material: Rc::new(Lambertian {
-                albedo: Color::new(0.7, 0.3, 0.3),
-            }),
+            material: Rc::new(Dielectric { ir: 1.5 }),
         }),
         Rc::new(Sphere {
             center: Point::new(-1., 0., -1.),
             radius: 0.5,
-            material: Rc::new(Metal {
-                albedo: Color::new(0.8, 0.8, 0.8),
-                fuzz: 0.3,
-            }),
+            material: Rc::new(Dielectric { ir: 1.5 }),
         }),
         Rc::new(Sphere {
             center: Point::new(1., 0., -1.),

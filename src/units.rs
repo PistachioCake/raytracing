@@ -51,3 +51,14 @@ pub fn random_on_hemisphere(normal: &Vector) -> Vector {
         -v
     }
 }
+
+pub fn reflect(v: &Vector, n: &Vector) -> Vector {
+    *v - *n * 2. * v.dot(*n)
+}
+
+pub fn refract(uv: &Vector, n: &Vector, etai_over_etat: f32) -> Vector {
+    let cos_theta = n.dot(-*uv).min(1.);
+    let r_out_perp = (*uv + *n * cos_theta) * etai_over_etat;
+    let r_out_para = *n * -(1. - r_out_perp.length_squared()).abs().sqrt();
+    r_out_perp + r_out_para
+}
