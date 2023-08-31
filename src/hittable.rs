@@ -143,7 +143,7 @@ impl Interval<f32> {
     };
 
     pub const POSITIVE: Self = Self {
-        min: 0.,
+        min: 0.001,
         max: f32::INFINITY,
     };
 
@@ -164,7 +164,7 @@ impl Interval<f64> {
     };
 
     pub const POSITIVE: Self = Self {
-        min: 0.,
+        min: 0.001,
         max: f64::INFINITY,
     };
 
