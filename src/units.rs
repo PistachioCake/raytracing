@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use glamour::{Point3, Unit, Vector3};
+use rand::{distributions::Uniform, thread_rng, Rng};
 
 pub struct ColorSpace;
 impl Unit for ColorSpace {
@@ -23,3 +24,27 @@ impl Unit for WorldSpace {
 
 pub type Point = Point3<WorldSpace>;
 pub type Vector = Vector3<WorldSpace>;
+
+pub fn random_in_unit_sphere() -> Vector {
+    let mut rng = thread_rng();
+    let distr = Uniform::new(-1., 1.);
+    loop {
+        let v = Vector::new(rng.sample(distr), rng.sample(distr), rng.sample(distr));
+        if v.length_squared() < 1. {
+            break v;
+        }
+    }
+}
+
+pub fn random_unit_vector() -> Vector {
+    random_in_unit_sphere().normalize()
+}
+
+pub fn random_on_hemisphere(normal: &Vector) -> Vector {
+    let v = random_unit_vector();
+    if v.dot(*normal) > 0. {
+        v
+    } else {
+        -v
+    }
+}
