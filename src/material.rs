@@ -1,3 +1,5 @@
+use rand::random;
+
 use crate::{
     hittable::HitRecord,
     ray::Ray,
@@ -54,6 +56,14 @@ impl Material for Metal {
     }
 }
 
+impl Dielectric {
+    fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
+        let r0 = (1. - ref_idx) / (1. + ref_idx);
+        let r0 = r0 * r0;
+        r0 + (1. - r0) * (1. - cosine).powf(5.)
+    }
+}
+
 impl Material for Dielectric {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
         let attenuation = Color::ONE;
@@ -68,6 +78,9 @@ impl Material for Dielectric {
         let sin_theta = (1. - cos_theta * cos_theta).sqrt();
 
         let cannot_refract = refraction_ratio * sin_theta > 1.;
+        let cannot_refract =
+            cannot_refract || Self::reflectance(cos_theta, refraction_ratio) > random();
+
         let direct = if cannot_refract {
             reflect(&unit_direction, &hit.normal)
         } else {
