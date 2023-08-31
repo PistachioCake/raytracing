@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
+    material::Material,
     ray::Ray,
     units::{Point, Vector},
 };
@@ -8,6 +9,7 @@ use crate::{
 pub struct HitRecord {
     pub p: Point,
     pub normal: Vector,
+    pub mat: Rc<dyn Material>,
     pub t: f32,
     pub front_face: bool,
 }
@@ -19,6 +21,7 @@ pub trait Hittable {
 pub struct Sphere {
     pub center: Point,
     pub radius: f32,
+    pub material: Rc<dyn Material>,
 }
 
 #[derive(Default)]
