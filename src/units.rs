@@ -12,7 +12,10 @@ pub type Color = Vector3<ColorSpace>;
 
 pub fn write_color(out: &mut dyn Write, c: Color) {
     let floats = c.as_array();
-    let ints = floats.map(|f| (f.clamp(0., 1.) * 255.999).floor() as u32);
+    let ints = floats
+        .map(f32::sqrt) // linear to gamma
+        .map(|f| (f.clamp(0., 1.) * 255.999).floor() as u32) // convert to integer in [0, 255]
+        ;
 
     write!(out, "{} {} {}\n", ints[0], ints[1], ints[2]).unwrap()
 }
