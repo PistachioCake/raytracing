@@ -13,6 +13,8 @@ fn main() {
     let image_height = image_height.max(1);
 
     // world
+    let material_left = Rc::new(Dielectric { ir: 1.5 });
+
     let objects: Vec<Rc<dyn Hittable>> = vec![
         Rc::new(Sphere {
             center: Point::new(0., -100.5, -1.),
@@ -31,7 +33,12 @@ fn main() {
         Rc::new(Sphere {
             center: Point::new(-1., 0., -1.),
             radius: 0.5,
-            material: Rc::new(Dielectric { ir: 1.5 }),
+            material: material_left.clone(),
+        }),
+        Rc::new(Sphere {
+            center: Point::new(-1., 0., -1.),
+            radius: -0.4,
+            material: material_left.clone(),
         }),
         Rc::new(Sphere {
             center: Point::new(1., 0., -1.),
