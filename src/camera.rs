@@ -28,9 +28,12 @@ impl Camera {
         image_height: i32,
         samples_per_pixel: Option<i32>,
         max_depth: Option<i32>,
+        vfov: f32,
     ) -> Self {
         let focal_length = 1.;
-        let viewport_height = 2.;
+        let theta = vfov.to_radians();
+        let h = (theta / 2.).tan();
+        let viewport_height = focal_length * 2. * h;
         let viewport_width = viewport_height * image_width as f32 / image_height as f32;
 
         let center: Point = Point::ZERO;

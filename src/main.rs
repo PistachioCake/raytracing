@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use raytracing::camera::Camera;
 use raytracing::hittable::{Hittable, HittableList, Sphere};
-use raytracing::material::{Dielectric, Lambertian, Metal};
+use raytracing::material::Lambertian;
 use raytracing::units::{Color, Point};
 
 fn main() {
@@ -13,39 +13,21 @@ fn main() {
     let image_height = image_height.max(1);
 
     // world
-    let material_left = Rc::new(Dielectric { ir: 1.5 });
+    let r = std::f32::consts::FRAC_PI_4.cos();
 
     let objects: Vec<Rc<dyn Hittable>> = vec![
         Rc::new(Sphere {
-            center: Point::new(0., -100.5, -1.),
-            radius: 100.,
+            center: Point::new(-r, 0., -1.),
+            radius: r,
             material: Rc::new(Lambertian {
-                albedo: Color::new(0.8, 0.8, 0.),
+                albedo: Color::new(0., 0., 1.),
             }),
         }),
         Rc::new(Sphere {
-            center: Point::new(0., 0., -1.),
-            radius: 0.5,
+            center: Point::new(r, 0., -1.),
+            radius: r,
             material: Rc::new(Lambertian {
-                albedo: Color::new(0.1, 0.2, 0.5),
-            }),
-        }),
-        Rc::new(Sphere {
-            center: Point::new(-1., 0., -1.),
-            radius: 0.5,
-            material: material_left.clone(),
-        }),
-        Rc::new(Sphere {
-            center: Point::new(-1., 0., -1.),
-            radius: -0.4,
-            material: material_left.clone(),
-        }),
-        Rc::new(Sphere {
-            center: Point::new(1., 0., -1.),
-            radius: 0.5,
-            material: Rc::new(Metal {
-                albedo: Color::new(0.8, 0.6, 0.2),
-                fuzz: 0.,
+                albedo: Color::new(1., 0., 0.),
             }),
         }),
     ];
@@ -53,7 +35,7 @@ fn main() {
     let world = HittableList { objects };
 
     // camera
-    let camera = Camera::new(image_width, image_height, Some(100), Some(50));
+    let camera = Camera::new(image_width, image_height, Some(100), Some(50), 90.);
 
     camera.render(&world);
 }
