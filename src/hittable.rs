@@ -36,7 +36,7 @@ pub struct Interval<T> {
 }
 
 impl HitRecord {
-    pub fn new(ray: &Ray, p: Point, outward_normal: Vector, t: f32) -> Self {
+    pub fn new(ray: &Ray, p: Point, outward_normal: Vector, mat: Rc<dyn Material>, t: f32) -> Self {
         // let p = ray.at(t);
         let front_face = ray.direct.dot(outward_normal) < 0.;
 
@@ -51,6 +51,7 @@ impl HitRecord {
             normal,
             t,
             front_face,
+            mat,
         }
     }
 }
@@ -79,7 +80,13 @@ impl Hittable for Sphere {
         let p = ray.at(t);
         let outward_normal = (p - self.center) / self.radius;
 
-        Some(HitRecord::new(ray, p, outward_normal, t))
+        Some(HitRecord::new(
+            ray,
+            p,
+            outward_normal,
+            self.material.clone(),
+            t,
+        ))
     }
 }
 

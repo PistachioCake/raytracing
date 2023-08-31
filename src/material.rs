@@ -13,7 +13,7 @@ pub struct Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
+    fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
         let direct = {
             let direct = hit.normal + random_unit_vector();
             if direct.max_element() < f32::EPSILON {

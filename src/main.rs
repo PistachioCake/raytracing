@@ -2,7 +2,8 @@ use std::rc::Rc;
 
 use raytracing::camera::Camera;
 use raytracing::hittable::{Hittable, HittableList, Sphere};
-use raytracing::units::Point;
+use raytracing::material::Lambertian;
+use raytracing::units::{Color, Point};
 
 fn main() {
     // image
@@ -12,14 +13,20 @@ fn main() {
     let image_height = image_height.max(1);
 
     // world
+    let material = Rc::new(Lambertian {
+        albedo: Color::new(0.5, 0.5, 0.5),
+    });
+
     let objects: Vec<Rc<dyn Hittable>> = vec![
         Rc::new(Sphere {
             center: Point::new(0., 0., -1.),
             radius: 0.5,
+            material: material.clone(),
         }),
         Rc::new(Sphere {
             center: Point::new(0., -100.5, -1.),
             radius: 100.,
+            material: material.clone(),
         }),
     ];
 
