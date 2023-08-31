@@ -12,6 +12,10 @@ pub struct Lambertian {
     pub albedo: Color,
 }
 
+pub struct Metal {
+    pub albedo: Color,
+}
+
 impl Material for Lambertian {
     fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
         let direct = {
@@ -29,5 +33,19 @@ impl Material for Lambertian {
         };
 
         Some((self.albedo, scattered))
+    }
+}
+
+impl Material for Metal {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
+        let reflected = ray.direct - hit.normal * 2. * ray.direct.dot(hit.normal);
+
+        Some((
+            self.albedo,
+            Ray {
+                origin: hit.p,
+                direct: reflected,
+            },
+        ))
     }
 }

@@ -5,7 +5,7 @@ use rand::random;
 use crate::{
     hittable::{Hittable, Interval},
     ray::Ray,
-    units::{random_unit_vector, write_color, Color, Point, Vector},
+    units::{write_color, Color, Point, Vector},
 };
 
 pub struct Camera {
@@ -115,15 +115,10 @@ impl Camera {
 
         let hit = world.hit(ray, Interval::<f32>::POSITIVE);
         if let Some(hit) = hit {
-            let bounce_direction = hit.normal + random_unit_vector();
-            return Self::ray_color(
-                &Ray {
-                    origin: hit.p,
-                    direct: bounce_direction,
-                },
-                world,
-                depth - 1,
-            ) / 2.;
+            if let Some((attenuation, scattered)) = hit.mat.scatter(ray, &hit) {
+                return Self::ray_color(&scattered, world, depth - 1) * attenuation;
+            }
+            return Color::ZERO;
         }
 
         let unit_direct = ray.direct.normalize();
