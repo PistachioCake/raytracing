@@ -64,11 +64,19 @@ impl Material for Dielectric {
         };
 
         let unit_direction = ray.direct.normalize();
-        let refracted = refract(&unit_direction, &hit.normal, refraction_ratio);
+        let cos_theta = hit.normal.dot(-unit_direction).min(1.);
+        let sin_theta = (1. - cos_theta * cos_theta).sqrt();
+
+        let cannot_refract = refraction_ratio * sin_theta > 1.;
+        let direct = if cannot_refract {
+            reflect(&unit_direction, &hit.normal)
+        } else {
+            refract(&unit_direction, &hit.normal, refraction_ratio)
+        };
 
         let scattered = Ray {
             origin: hit.p,
-            direct: refracted,
+            direct,
         };
 
         Some((attenuation, scattered))

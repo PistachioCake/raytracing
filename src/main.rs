@@ -24,7 +24,9 @@ fn main() {
         Rc::new(Sphere {
             center: Point::new(0., 0., -1.),
             radius: 0.5,
-            material: Rc::new(Dielectric { ir: 1.5 }),
+            material: Rc::new(Lambertian {
+                albedo: Color::new(0.1, 0.2, 0.5),
+            }),
         }),
         Rc::new(Sphere {
             center: Point::new(-1., 0., -1.),
@@ -36,7 +38,7 @@ fn main() {
             radius: 0.5,
             material: Rc::new(Metal {
                 albedo: Color::new(0.8, 0.6, 0.2),
-                fuzz: 1.,
+                fuzz: 0.,
             }),
         }),
     ];
