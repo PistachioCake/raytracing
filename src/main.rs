@@ -1,63 +1,97 @@
 use std::rc::Rc;
 
+use rand::{random, thread_rng, Rng};
 use raytracing::camera::CameraBuilder;
-use raytracing::hittable::{Hittable, HittableList, Sphere};
-use raytracing::material::{Dielectric, Lambertian, Metal};
+use raytracing::hittable::{HittableList, Sphere};
+use raytracing::material::{Dielectric, Lambertian, Material, Metal};
 use raytracing::units::{Color, Point, Vector};
 
 fn main() {
+    let mut rng = thread_rng();
     // world
-    let material_left = Rc::new(Dielectric { ir: 1.5 });
+    let mut world = HittableList {
+        objects: Vec::with_capacity(124),
+    };
 
-    let objects: Vec<Rc<dyn Hittable>> = vec![
-        Rc::new(Sphere {
-            center: Point::new(0., -100.5, -1.),
-            radius: 100.,
-            material: Rc::new(Lambertian {
-                albedo: Color::new(0.8, 0.8, 0.),
-            }),
-        }),
-        Rc::new(Sphere {
-            center: Point::new(0., 0., -1.),
-            radius: 0.5,
-            material: Rc::new(Lambertian {
-                albedo: Color::new(0.1, 0.2, 0.5),
-            }),
-        }),
-        Rc::new(Sphere {
-            center: Point::new(-1., 0., -1.),
-            radius: 0.5,
-            material: material_left.clone(),
-        }),
-        Rc::new(Sphere {
-            center: Point::new(-1., 0., -1.),
-            radius: -0.4,
-            material: material_left.clone(),
-        }),
-        Rc::new(Sphere {
-            center: Point::new(1., 0., -1.),
-            radius: 0.5,
-            material: Rc::new(Metal {
-                albedo: Color::new(0.8, 0.6, 0.2),
-                fuzz: 0.,
-            }),
-        }),
-    ];
+    let ground_material = Rc::new(Lambertian {
+        albedo: Color::new(0.5, 0.5, 0.5),
+    });
+    world.add(Rc::new(Sphere {
+        center: Point::new(0., -1000., 0.),
+        radius: 1000.,
+        material: ground_material,
+    }));
 
-    let world = HittableList { objects };
+    for a in -11..11 {
+        for b in -11..11 {
+            let (a, b) = (a as f32, b as f32);
+            let choose_mat: f32 = rng.gen();
+            let center = Point::new(a + 0.9 * rng.gen::<f32>(), 0.2, b + 0.9 * random::<f32>());
+
+            if (center - Point::new(4., 0.2, 0.)).length() <= 0.9 {
+                continue;
+            }
+
+            let material: Rc<dyn Material> = if choose_mat < 0.8 {
+                let p1 = Color::new(rng.gen(), rng.gen(), rng.gen());
+                let p2 = Color::new(rng.gen(), rng.gen(), rng.gen());
+                let albedo = p1 * p2;
+                Rc::new(Lambertian { albedo })
+            } else if choose_mat < 0.95 {
+                let albedo = Color::new(
+                    rng.gen_range(0.5..1.),
+                    rng.gen_range(0.5..1.),
+                    rng.gen_range(0.5..1.),
+                );
+                let fuzz = rng.gen_range(0.0..0.5);
+                Rc::new(Metal { albedo, fuzz })
+            } else {
+                Rc::new(Dielectric { ir: 1.5 })
+            };
+
+            world.add(Rc::new(Sphere {
+                center,
+                radius: 0.2,
+                material,
+            }))
+        }
+    }
+
+    world.add(Rc::new(Sphere {
+        center: Point::new(0., 1., 0.),
+        radius: 1.,
+        material: Rc::new(Dielectric { ir: 1.5 }),
+    }));
+
+    world.add(Rc::new(Sphere {
+        center: Point::new(-4., 1., 0.),
+        radius: 1.,
+        material: Rc::new(Lambertian {
+            albedo: Color::new(0.4, 0.2, 0.1),
+        }),
+    }));
+
+    world.add(Rc::new(Sphere {
+        center: Point::new(4., 1., 0.),
+        radius: 1.,
+        material: Rc::new(Metal {
+            albedo: Color::new(0.7, 0.6, 0.5),
+            fuzz: 1.,
+        }),
+    }));
 
     // camera
     let camera = CameraBuilder::default()
         .with_aspect_ratio(16. / 9.)
-        .with_image_width(400)
-        .with_samples_per_pixel(100)
+        .with_image_width(1200)
+        .with_samples_per_pixel(500)
         .with_max_depth(50)
         .with_vfov(20.)
-        .with_lookfrom(Point::new(-2., 2., 1.))
-        .with_lookat(Point::new(0., 0., -1.))
+        .with_lookfrom(Point::new(13., 2., 3.))
+        .with_lookat(Point::new(0., 0., 0.))
         .with_vup(Vector::new(0., 1., 0.))
-        .with_defocus_angle(10.)
-        .with_focus_dist(3.4);
+        .with_defocus_angle(0.6)
+        .with_focus_dist(10.);
     let camera = camera.build();
 
     camera.render(&world);
