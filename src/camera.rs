@@ -12,9 +12,14 @@ pub struct CameraBuilder {
     aspect_ratio: f32,
     image_width: Option<i32>,
     image_height: Option<i32>,
+
     samples_per_pixel: i32,
     max_depth: i32,
+
     vfov: f32,
+    lookfrom: Point,
+    lookat: Point,
+    vup: Vector,
 }
 
 pub struct Camera {
@@ -40,6 +45,9 @@ impl Default for CameraBuilder {
             samples_per_pixel: 10,
             max_depth: 10,
             vfov: 1.,
+            lookfrom: Point::new(0., 0., -1.),
+            lookat: Point::new(0., 0., 0.),
+            vup: Vector::new(0., 1., 0.),
         }
     }
 }
@@ -75,6 +83,21 @@ impl CameraBuilder {
         self
     }
 
+    pub fn with_lookfrom(mut self, lookfrom: Point) -> Self {
+        self.lookfrom = lookfrom;
+        self
+    }
+
+    pub fn with_lookat(mut self, lookat: Point) -> Self {
+        self.lookat = lookat;
+        self
+    }
+
+    pub fn with_vup(mut self, vup: Vector) -> Self {
+        self.vup = vup;
+        self
+    }
+
     pub fn build(self) -> Camera {
         let CameraBuilder {
             aspect_ratio,
@@ -83,6 +106,9 @@ impl CameraBuilder {
             samples_per_pixel,
             max_depth,
             vfov,
+            lookfrom,
+            lookat,
+            vup,
         } = self;
 
         let (image_width, image_height) = match (image_width, image_height) {
@@ -98,25 +124,30 @@ impl CameraBuilder {
             (Some(image_width), Some(image_height)) => (image_width, image_height),
         };
 
-        let focal_length = 1.;
+        let center: Point = lookfrom;
+
+        let focal_length = (lookfrom - lookat).length();
         let theta = vfov.to_radians();
         let h = (theta / 2.).tan();
         let viewport_height = focal_length * 2. * h;
         let viewport_width = viewport_height * image_width as f32 / image_height as f32;
 
-        let center: Point = Point::ZERO;
+        // basis vectors for the camera coordinate system
+        let w = (lookfrom - lookat).normalize();
+        let u = vup.cross(w).normalize();
+        let v = w.cross(u);
+        assert!(v.is_normalized());
 
         // vectors framing the viewport
-        let viewport_u = Vector::new(viewport_width, 0., 0.);
-        let viewport_v = Vector::new(0., -viewport_height, 0.);
+        let viewport_u = u * viewport_width;
+        let viewport_v = v * -viewport_height;
 
         // vectors between the center of each pixel
         let pixel_delta_u = viewport_u / image_width as f32;
         let pixel_delta_v = viewport_v / image_height as f32;
 
         // location of the upper left pixel
-        let viewport_upper_left =
-            center - Vector::new(0., 0., focal_length) - (viewport_u + viewport_v) / 2.;
+        let viewport_upper_left = center - (w * focal_length) - (viewport_u + viewport_v) / 2.;
         let pixel_00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) / 2.;
 
         Camera {
