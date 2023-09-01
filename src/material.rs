@@ -6,7 +6,7 @@ use crate::{
     units::{random_unit_vector, reflect, refract, Color},
 };
 
-pub trait Material {
+pub trait Material: Sync + Send {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)>;
 }
 

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::{
     material::Material,
@@ -9,24 +9,24 @@ use crate::{
 pub struct HitRecord {
     pub p: Point,
     pub normal: Vector,
-    pub mat: Rc<dyn Material>,
+    pub mat: Arc<dyn Material>,
     pub t: f32,
     pub front_face: bool,
 }
 
-pub trait Hittable {
+pub trait Hittable: Sync + Send {
     fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord>;
 }
 
 pub struct Sphere {
     pub center: Point,
     pub radius: f32,
-    pub material: Rc<dyn Material>,
+    pub material: Arc<dyn Material>,
 }
 
 #[derive(Default)]
 pub struct HittableList {
-    pub objects: Vec<Rc<dyn Hittable>>,
+    pub objects: Vec<Arc<dyn Hittable>>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -36,7 +36,13 @@ pub struct Interval<T> {
 }
 
 impl HitRecord {
-    pub fn new(ray: &Ray, p: Point, outward_normal: Vector, mat: Rc<dyn Material>, t: f32) -> Self {
+    pub fn new(
+        ray: &Ray,
+        p: Point,
+        outward_normal: Vector,
+        mat: Arc<dyn Material>,
+        t: f32,
+    ) -> Self {
         // let p = ray.at(t);
         let front_face = ray.direct.dot(outward_normal) < 0.;
 
@@ -101,7 +107,7 @@ impl HittableList {
         self.objects.clear()
     }
 
-    pub fn add(&mut self, object: Rc<dyn Hittable>) {
+    pub fn add(&mut self, object: Arc<dyn Hittable>) {
         self.objects.push(object)
     }
 }

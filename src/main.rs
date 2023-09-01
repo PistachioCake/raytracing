@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use rand::{random, thread_rng, Rng};
 use raytracing::camera::CameraBuilder;
@@ -13,10 +13,10 @@ fn main() {
         objects: Vec::with_capacity(124),
     };
 
-    let ground_material = Rc::new(Lambertian {
+    let ground_material = Arc::new(Lambertian {
         albedo: Color::new(0.5, 0.5, 0.5),
     });
-    world.add(Rc::new(Sphere {
+    world.add(Arc::new(Sphere {
         center: Point::new(0., -1000., 0.),
         radius: 1000.,
         material: ground_material,
@@ -32,11 +32,11 @@ fn main() {
                 continue;
             }
 
-            let material: Rc<dyn Material> = if choose_mat < 0.8 {
+            let material: Arc<dyn Material> = if choose_mat < 0.8 {
                 let p1 = Color::new(rng.gen(), rng.gen(), rng.gen());
                 let p2 = Color::new(rng.gen(), rng.gen(), rng.gen());
                 let albedo = p1 * p2;
-                Rc::new(Lambertian { albedo })
+                Arc::new(Lambertian { albedo })
             } else if choose_mat < 0.95 {
                 let albedo = Color::new(
                     rng.gen_range(0.5..1.),
@@ -44,12 +44,12 @@ fn main() {
                     rng.gen_range(0.5..1.),
                 );
                 let fuzz = rng.gen_range(0.0..0.5);
-                Rc::new(Metal { albedo, fuzz })
+                Arc::new(Metal { albedo, fuzz })
             } else {
-                Rc::new(Dielectric { ir: 1.5 })
+                Arc::new(Dielectric { ir: 1.5 })
             };
 
-            world.add(Rc::new(Sphere {
+            world.add(Arc::new(Sphere {
                 center,
                 radius: 0.2,
                 material,
@@ -57,24 +57,24 @@ fn main() {
         }
     }
 
-    world.add(Rc::new(Sphere {
+    world.add(Arc::new(Sphere {
         center: Point::new(0., 1., 0.),
         radius: 1.,
-        material: Rc::new(Dielectric { ir: 1.5 }),
+        material: Arc::new(Dielectric { ir: 1.5 }),
     }));
 
-    world.add(Rc::new(Sphere {
+    world.add(Arc::new(Sphere {
         center: Point::new(-4., 1., 0.),
         radius: 1.,
-        material: Rc::new(Lambertian {
+        material: Arc::new(Lambertian {
             albedo: Color::new(0.4, 0.2, 0.1),
         }),
     }));
 
-    world.add(Rc::new(Sphere {
+    world.add(Arc::new(Sphere {
         center: Point::new(4., 1., 0.),
         radius: 1.,
-        material: Rc::new(Metal {
+        material: Arc::new(Metal {
             albedo: Color::new(0.7, 0.6, 0.5),
             fuzz: 1.,
         }),

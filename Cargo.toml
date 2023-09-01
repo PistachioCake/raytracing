@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 glamour = "0.8.0"
+indicatif = { version = "0.17.6", features = ["rayon"] }
 rand = "0.8.5"
+rayon = "1.7.0"

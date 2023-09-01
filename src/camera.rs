@@ -1,6 +1,8 @@
 use std::io::{BufWriter, Write};
 
+use indicatif::ParallelProgressIterator;
 use rand::random;
+use rayon::prelude::*;
 
 use crate::{
     hittable::{Hittable, Interval},
@@ -192,6 +194,28 @@ impl CameraBuilder {
 
 impl Camera {
     pub fn render(&self, world: &dyn Hittable) {
+        let image: Vec<_> = (0..self.image_height)
+            .into_par_iter()
+            .progress()
+            .map(|j| {
+                let scanline: Vec<_> = (0..self.image_width)
+                    .map(|i| {
+                        let mut color = Color::ZERO;
+                        for _ in 0..self.samples_per_pixel {
+                            let ray = self.get_ray(i, j);
+
+                            color += Camera::ray_color(&ray, world, self.max_depth);
+                        }
+
+                        color /= self.samples_per_pixel as f32;
+
+                        // write_color(&mut stdout, color);
+                        color
+                    })
+                    .collect();
+                scanline
+            })
+            .collect();
         let stdout = std::io::stdout().lock();
         let mut stdout = BufWriter::new(stdout);
         let mut stderr = std::io::stderr().lock();
@@ -203,23 +227,12 @@ impl Camera {
         )
         .unwrap();
 
-        for j in 0..self.image_height {
-            write!(stderr, "\rScanlines remaining: {:3}", self.image_height - j).unwrap();
-            stderr.flush().unwrap();
-
-            for i in 0..self.image_width {
-                let mut color = Color::ZERO;
-                for _ in 0..self.samples_per_pixel {
-                    let ray = self.get_ray(i, j);
-
-                    color += Camera::ray_color(&ray, world, self.max_depth);
-                }
-
-                color /= self.samples_per_pixel as f32;
-
-                write_color(&mut stdout, color);
+        for line in image {
+            for col in line {
+                write_color(&mut stdout, col);
             }
         }
+
         stdout.flush().unwrap();
         write!(stderr, "\r{:30}\n", "Done.").unwrap();
     }
