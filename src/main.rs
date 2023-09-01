@@ -55,7 +55,9 @@ fn main() {
         .with_vfov(20.)
         .with_lookfrom(Point::new(-2., 2., 1.))
         .with_lookat(Point::new(0., 0., -1.))
-        .with_vup(Vector::new(0., 1., 0.));
+        .with_vup(Vector::new(0., 1., 0.))
+        .with_defocus_angle(10.)
+        .with_focus_dist(3.4);
     let camera = camera.build();
 
     camera.render(&world);

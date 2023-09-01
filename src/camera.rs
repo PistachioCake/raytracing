@@ -5,7 +5,7 @@ use rand::random;
 use crate::{
     hittable::{Hittable, Interval},
     ray::Ray,
-    units::{write_color, Color, Point, Vector},
+    units::{random_in_unit_disk, write_color, Color, Point, Vector},
 };
 
 pub struct CameraBuilder {
@@ -20,6 +20,9 @@ pub struct CameraBuilder {
     lookfrom: Point,
     lookat: Point,
     vup: Vector,
+
+    defocus_angle: f32,
+    focus_dist: f32,
 }
 
 pub struct Camera {
@@ -31,6 +34,10 @@ pub struct Camera {
     pixel_00_loc: Point,
     pixel_delta_u: Vector,
     pixel_delta_v: Vector,
+
+    defocus_angle: f32,
+    defocus_disk_u: Vector,
+    defocus_disk_v: Vector,
 
     samples_per_pixel: i32,
     max_depth: i32,
@@ -48,6 +55,8 @@ impl Default for CameraBuilder {
             lookfrom: Point::new(0., 0., -1.),
             lookat: Point::new(0., 0., 0.),
             vup: Vector::new(0., 1., 0.),
+            defocus_angle: 0.,
+            focus_dist: 10.,
         }
     }
 }
@@ -98,6 +107,16 @@ impl CameraBuilder {
         self
     }
 
+    pub fn with_defocus_angle(mut self, defocus_angle: f32) -> Self {
+        self.defocus_angle = defocus_angle;
+        self
+    }
+
+    pub fn with_focus_dist(mut self, focus_dist: f32) -> Self {
+        self.focus_dist = focus_dist;
+        self
+    }
+
     pub fn build(self) -> Camera {
         let CameraBuilder {
             aspect_ratio,
@@ -109,6 +128,8 @@ impl CameraBuilder {
             lookfrom,
             lookat,
             vup,
+            defocus_angle,
+            focus_dist,
         } = self;
 
         let (image_width, image_height) = match (image_width, image_height) {
@@ -126,10 +147,9 @@ impl CameraBuilder {
 
         let center: Point = lookfrom;
 
-        let focal_length = (lookfrom - lookat).length();
         let theta = vfov.to_radians();
         let h = (theta / 2.).tan();
-        let viewport_height = focal_length * 2. * h;
+        let viewport_height = focus_dist * 2. * h;
         let viewport_width = viewport_height * image_width as f32 / image_height as f32;
 
         // basis vectors for the camera coordinate system
@@ -147,8 +167,12 @@ impl CameraBuilder {
         let pixel_delta_v = viewport_v / image_height as f32;
 
         // location of the upper left pixel
-        let viewport_upper_left = center - (w * focal_length) - (viewport_u + viewport_v) / 2.;
+        let viewport_upper_left = center - (w * focus_dist) - (viewport_u + viewport_v) / 2.;
         let pixel_00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) / 2.;
+
+        let defocus_radius = focus_dist * (defocus_angle / 2.).to_radians().tan();
+        let defocus_disk_u = u * defocus_radius;
+        let defocus_disk_v = v * defocus_radius;
 
         Camera {
             image_width,
@@ -157,6 +181,9 @@ impl CameraBuilder {
             pixel_00_loc,
             pixel_delta_u,
             pixel_delta_v,
+            defocus_angle,
+            defocus_disk_u,
+            defocus_disk_v,
             samples_per_pixel,
             max_depth,
         }
@@ -201,12 +228,19 @@ impl Camera {
         let pixel_center =
             self.pixel_00_loc + self.pixel_delta_u * i as f32 + self.pixel_delta_v * j as f32;
         let pixel_sample = pixel_center + self.pixel_sample_square();
-        let direct = pixel_sample - self.center;
+        let origin = if self.defocus_angle <= 0. {
+            self.center
+        } else {
+            self.defocus_disk_sample()
+        };
+        let direct = pixel_sample - origin;
 
-        Ray {
-            origin: self.center,
-            direct,
-        }
+        Ray { origin, direct }
+    }
+
+    fn defocus_disk_sample(&self) -> Point {
+        let p = random_in_unit_disk();
+        self.center + self.defocus_disk_u * p.x + self.defocus_disk_v * p.y
     }
 
     fn ray_color(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {

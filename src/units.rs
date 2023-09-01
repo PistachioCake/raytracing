@@ -52,6 +52,17 @@ pub fn random_on_hemisphere(normal: &Vector) -> Vector {
     }
 }
 
+pub fn random_in_unit_disk() -> Vector {
+    let mut rng = thread_rng();
+    let distr = Uniform::new(-1., 1.);
+    loop {
+        let v = Vector::new(rng.sample(distr), rng.sample(distr), 0.);
+        if v.length_squared() < 1. {
+            break v;
+        }
+    }
+}
+
 pub fn reflect(v: &Vector, n: &Vector) -> Vector {
     *v - *n * 2. * v.dot(*n)
 }
