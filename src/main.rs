@@ -1,17 +1,11 @@
 use std::rc::Rc;
 
-use raytracing::camera::Camera;
+use raytracing::camera::{Camera, CameraBuilder};
 use raytracing::hittable::{Hittable, HittableList, Sphere};
 use raytracing::material::Lambertian;
 use raytracing::units::{Color, Point};
 
 fn main() {
-    // image
-    let aspect_ratio: f32 = 16. / 9.;
-    let image_width = 400;
-    let image_height = (image_width as f32 / aspect_ratio).floor() as i32;
-    let image_height = image_height.max(1);
-
     // world
     let r = std::f32::consts::FRAC_PI_4.cos();
 
@@ -35,7 +29,13 @@ fn main() {
     let world = HittableList { objects };
 
     // camera
-    let camera = Camera::new(image_width, image_height, Some(100), Some(50), 90.);
+    let camera = CameraBuilder::default()
+        .with_aspect_ratio(16. / 9.)
+        .with_image_width(400)
+        .with_samples_per_pixel(100)
+        .with_max_depth(50)
+        .with_vfov(90.);
+    let camera = camera.build();
 
     camera.render(&world);
 }

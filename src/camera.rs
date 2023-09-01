@@ -8,6 +8,15 @@ use crate::{
     units::{write_color, Color, Point, Vector},
 };
 
+pub struct CameraBuilder {
+    aspect_ratio: f32,
+    image_width: Option<i32>,
+    image_height: Option<i32>,
+    samples_per_pixel: i32,
+    max_depth: i32,
+    vfov: f32,
+}
+
 pub struct Camera {
     image_width: i32,
     image_height: i32,
@@ -22,14 +31,73 @@ pub struct Camera {
     max_depth: i32,
 }
 
-impl Camera {
-    pub fn new(
-        image_width: i32,
-        image_height: i32,
-        samples_per_pixel: Option<i32>,
-        max_depth: Option<i32>,
-        vfov: f32,
-    ) -> Self {
+impl Default for CameraBuilder {
+    fn default() -> Self {
+        Self {
+            aspect_ratio: 1.,
+            image_width: Some(100),
+            image_height: None,
+            samples_per_pixel: 10,
+            max_depth: 10,
+            vfov: 1.,
+        }
+    }
+}
+
+impl CameraBuilder {
+    pub fn with_aspect_ratio(mut self, aspect_ratio: f32) -> Self {
+        self.aspect_ratio = aspect_ratio;
+        self
+    }
+
+    pub fn with_image_width(mut self, image_width: i32) -> Self {
+        self.image_width = Some(image_width);
+        self
+    }
+
+    pub fn with_image_height(mut self, image_height: i32) -> Self {
+        self.image_height = Some(image_height);
+        self
+    }
+
+    pub fn with_samples_per_pixel(mut self, samples_per_pixel: i32) -> Self {
+        self.samples_per_pixel = samples_per_pixel;
+        self
+    }
+
+    pub fn with_max_depth(mut self, max_depth: i32) -> Self {
+        self.max_depth = max_depth;
+        self
+    }
+
+    pub fn with_vfov(mut self, vfov: f32) -> Self {
+        self.vfov = vfov;
+        self
+    }
+
+    pub fn build(self) -> Camera {
+        let CameraBuilder {
+            aspect_ratio,
+            image_width,
+            image_height,
+            samples_per_pixel,
+            max_depth,
+            vfov,
+        } = self;
+
+        let (image_width, image_height) = match (image_width, image_height) {
+            (None, None) => (100, (100. / aspect_ratio).floor() as _),
+            (Some(image_width), None) => (
+                image_width,
+                (image_width as f32 / aspect_ratio).floor() as _,
+            ),
+            (None, Some(image_height)) => (
+                (image_height as f32 * aspect_ratio).floor() as _,
+                image_height,
+            ),
+            (Some(image_width), Some(image_height)) => (image_width, image_height),
+        };
+
         let focal_length = 1.;
         let theta = vfov.to_radians();
         let h = (theta / 2.).tan();
@@ -51,10 +119,7 @@ impl Camera {
             center - Vector::new(0., 0., focal_length) - (viewport_u + viewport_v) / 2.;
         let pixel_00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) / 2.;
 
-        let samples_per_pixel = samples_per_pixel.unwrap_or(10);
-        let max_depth = max_depth.unwrap_or(10);
-
-        Self {
+        Camera {
             image_width,
             image_height,
             center,
@@ -65,7 +130,9 @@ impl Camera {
             max_depth,
         }
     }
+}
 
+impl Camera {
     pub fn render(&self, world: &dyn Hittable) {
         let stdout = std::io::stdout().lock();
         let mut stdout = BufWriter::new(stdout);
