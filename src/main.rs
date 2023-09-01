@@ -1,22 +1,24 @@
-use std::sync::Arc;
-
+use bumpalo::Bump;
 use rand::{random, thread_rng, Rng};
+
 use raytracing::camera::CameraBuilder;
 use raytracing::hittable::{HittableList, Sphere};
 use raytracing::material::{Dielectric, Lambertian, Material, Metal};
 use raytracing::units::{Color, Point, Vector};
 
 fn main() {
+    let bump = Bump::new();
     let mut rng = thread_rng();
+
     // world
     let mut world = HittableList {
         objects: Vec::with_capacity(124),
     };
 
-    let ground_material = Arc::new(Lambertian {
+    let ground_material = &(Lambertian {
         albedo: Color::new(0.5, 0.5, 0.5),
     });
-    world.add(Arc::new(Sphere {
+    world.add(bump.alloc(Sphere {
         center: Point::new(0., -1000., 0.),
         radius: 1000.,
         material: ground_material,
@@ -32,11 +34,11 @@ fn main() {
                 continue;
             }
 
-            let material: Arc<dyn Material> = if choose_mat < 0.8 {
+            let material: &dyn Material = if choose_mat < 0.8 {
                 let p1 = Color::new(rng.gen(), rng.gen(), rng.gen());
                 let p2 = Color::new(rng.gen(), rng.gen(), rng.gen());
                 let albedo = p1 * p2;
-                Arc::new(Lambertian { albedo })
+                bump.alloc(Lambertian { albedo })
             } else if choose_mat < 0.95 {
                 let albedo = Color::new(
                     rng.gen_range(0.5..1.),
@@ -44,12 +46,12 @@ fn main() {
                     rng.gen_range(0.5..1.),
                 );
                 let fuzz = rng.gen_range(0.0..0.5);
-                Arc::new(Metal { albedo, fuzz })
+                bump.alloc(Metal { albedo, fuzz })
             } else {
-                Arc::new(Dielectric { ir: 1.5 })
+                bump.alloc(Dielectric { ir: 1.5 })
             };
 
-            world.add(Arc::new(Sphere {
+            world.add(bump.alloc(Sphere {
                 center,
                 radius: 0.2,
                 material,
@@ -57,24 +59,24 @@ fn main() {
         }
     }
 
-    world.add(Arc::new(Sphere {
+    world.add(bump.alloc(Sphere {
         center: Point::new(0., 1., 0.),
         radius: 1.,
-        material: Arc::new(Dielectric { ir: 1.5 }),
+        material: bump.alloc(Dielectric { ir: 1.5 }),
     }));
 
-    world.add(Arc::new(Sphere {
+    world.add(bump.alloc(Sphere {
         center: Point::new(-4., 1., 0.),
         radius: 1.,
-        material: Arc::new(Lambertian {
+        material: bump.alloc(Lambertian {
             albedo: Color::new(0.4, 0.2, 0.1),
         }),
     }));
 
-    world.add(Arc::new(Sphere {
+    world.add(bump.alloc(Sphere {
         center: Point::new(4., 1., 0.),
         radius: 1.,
-        material: Arc::new(Metal {
+        material: bump.alloc(Metal {
             albedo: Color::new(0.7, 0.6, 0.5),
             fuzz: 1.,
         }),
