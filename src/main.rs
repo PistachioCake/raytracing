@@ -1,11 +1,13 @@
 use bumpalo::Bump;
 use rand::{random, thread_rng, Rng};
 
-use raytracing::camera::CameraBuilder;
-use raytracing::hittable::{HittableList, Sphere};
-use raytracing::material::{Dielectric, Lambertian, Material, Metal};
-use raytracing::time_utils::{Linear, Unchanging};
-use raytracing::units::{Color, Point, Vector};
+use raytracing::{
+    camera::CameraBuilder,
+    hittable::{HittableList, Sphere},
+    material::{Dielectric, Lambertian, Material, Metal},
+    time_utils::{Linear, Unchanging},
+    units::{Color, Point, Vector},
+};
 
 fn main() {
     let bump = Bump::new();

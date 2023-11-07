@@ -17,7 +17,7 @@ pub fn write_color(out: &mut dyn Write, c: Color) {
         .map(|f| (f.clamp(0., 1.) * 255.999).floor() as u32) // convert to integer in [0, 255]
         ;
 
-    write!(out, "{} {} {}\n", ints[0], ints[1], ints[2]).unwrap()
+    writeln!(out, "{} {} {}", ints[0], ints[1], ints[2]).unwrap()
 }
 
 pub struct WorldSpace;

@@ -1,9 +1,14 @@
+pub mod interval;
+pub mod sphere;
+
 use crate::{
     material::Material,
     ray::Ray,
-    time_utils::Movement,
     units::{Point, Vector},
 };
+
+pub use self::interval::Interval;
+pub use self::sphere::Sphere;
 
 pub struct HitRecord<'a> {
     pub p: Point,
@@ -17,21 +22,9 @@ pub trait Hittable: Sync + Send {
     fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord>;
 }
 
-pub struct Sphere<'a, Center: Movement<Point>> {
-    pub center: Center::Storage,
-    pub radius: f32,
-    pub material: &'a dyn Material,
-}
-
 #[derive(Default)]
 pub struct HittableList<'a> {
     pub objects: Vec<&'a dyn Hittable>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct Interval<T> {
-    pub min: T,
-    pub max: T,
 }
 
 impl<'a> HitRecord<'a> {
@@ -52,42 +45,6 @@ impl<'a> HitRecord<'a> {
             front_face,
             mat,
         }
-    }
-}
-
-impl<Center: Movement<Point>> Hittable for Sphere<'_, Center> {
-    fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord> {
-        let center = <Center as Movement<_>>::get_at_time(&self.center, ray.time);
-
-        let oc = ray.origin - center;
-        let a = ray.direct.length_squared();
-        let half_b = oc.dot(ray.direct);
-        let c = oc.length_squared() - self.radius * self.radius;
-
-        let discr = half_b * half_b - a * c;
-        if discr < 0. {
-            return None;
-        }
-
-        // find the nearest root that lies in the acceptable range
-        let t = [(-half_b - discr.sqrt()) / a, (-half_b + discr.sqrt()) / a]
-            .into_iter()
-            .find(|&root| ray_t.surrounds(root));
-        let t = match t {
-            Some(t) => t,
-            None => return None,
-        };
-
-        let p = ray.at(t);
-        let outward_normal = (p - center) / self.radius;
-
-        Some(HitRecord::new(
-            ray,
-            p,
-            outward_normal,
-            self.material.clone(),
-            t,
-        ))
     }
 }
 
@@ -120,66 +77,5 @@ impl Hittable for HittableList<'_> {
         }
 
         hit_record
-    }
-}
-
-impl<T: PartialOrd> Interval<T> {
-    pub fn contains(self, x: T) -> bool {
-        self.min <= x && x <= self.max
-    }
-
-    pub fn surrounds(self, x: T) -> bool {
-        self.min < x && x < self.max
-    }
-}
-
-impl<T: Ord> Interval<T> {
-    // cannot implement because of compiler error
-    // "upstream crates may add a new impl of trait `std::cmp::Ord` for type `f32`/`f64`"
-    //
-    // pub fn clamp(self, x: T) -> T {
-    //     x.clamp(self.min, self.max)
-    // }
-}
-
-impl Interval<f32> {
-    pub const EMPTY: Self = Self {
-        min: f32::INFINITY,
-        max: f32::NEG_INFINITY,
-    };
-
-    pub const UNIVERSE: Self = Self {
-        min: f32::NEG_INFINITY,
-        max: f32::INFINITY,
-    };
-
-    pub const POSITIVE: Self = Self {
-        min: 0.001,
-        max: f32::INFINITY,
-    };
-
-    pub fn clamp(self, x: f32) -> f32 {
-        x.clamp(self.min, self.max)
-    }
-}
-
-impl Interval<f64> {
-    pub const EMPTY: Self = Self {
-        min: f64::INFINITY,
-        max: f64::NEG_INFINITY,
-    };
-
-    pub const UNIVERSE: Self = Self {
-        min: f64::NEG_INFINITY,
-        max: f64::INFINITY,
-    };
-
-    pub const POSITIVE: Self = Self {
-        min: 0.001,
-        max: f64::INFINITY,
-    };
-
-    pub fn clamp(self, x: f64) -> f64 {
-        x.clamp(self.min, self.max)
     }
 }
