@@ -4,6 +4,7 @@ use crate::units::{Point, Vector};
 pub struct Ray {
     pub origin: Point,
     pub direct: Vector,
+    pub time: f32,
 }
 
 impl Ray {

@@ -1,6 +1,7 @@
 use crate::{
     material::Material,
     ray::Ray,
+    time_utils::Movement,
     units::{Point, Vector},
 };
 
@@ -16,8 +17,8 @@ pub trait Hittable: Sync + Send {
     fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord>;
 }
 
-pub struct Sphere<'a> {
-    pub center: Point,
+pub struct Sphere<'a, Center: Movement<Point>> {
+    pub center: Center::Storage,
     pub radius: f32,
     pub material: &'a dyn Material,
 }
@@ -54,9 +55,11 @@ impl<'a> HitRecord<'a> {
     }
 }
 
-impl Hittable for Sphere<'_> {
+impl<Center: Movement<Point>> Hittable for Sphere<'_, Center> {
     fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord> {
-        let oc = ray.origin - self.center;
+        let center = <Center as Movement<_>>::get_at_time(&self.center, ray.time);
+
+        let oc = ray.origin - center;
         let a = ray.direct.length_squared();
         let half_b = oc.dot(ray.direct);
         let c = oc.length_squared() - self.radius * self.radius;
@@ -76,7 +79,7 @@ impl Hittable for Sphere<'_> {
         };
 
         let p = ray.at(t);
-        let outward_normal = (p - self.center) / self.radius;
+        let outward_normal = (p - center) / self.radius;
 
         Some(HitRecord::new(
             ray,

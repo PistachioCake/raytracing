@@ -4,6 +4,7 @@ use rand::{random, thread_rng, Rng};
 use raytracing::camera::CameraBuilder;
 use raytracing::hittable::{HittableList, Sphere};
 use raytracing::material::{Dielectric, Lambertian, Material, Metal};
+use raytracing::time_utils::{Linear, Unchanging};
 use raytracing::units::{Color, Point, Vector};
 
 fn main() {
@@ -18,7 +19,7 @@ fn main() {
     let ground_material = &(Lambertian {
         albedo: Color::new(0.5, 0.5, 0.5),
     });
-    world.add(bump.alloc(Sphere {
+    world.add(bump.alloc(Sphere::<Unchanging> {
         center: Point::new(0., -1000., 0.),
         radius: 1000.,
         material: ground_material,
@@ -51,21 +52,30 @@ fn main() {
                 bump.alloc(Dielectric { ir: 1.5 })
             };
 
-            world.add(bump.alloc(Sphere {
-                center,
-                radius: 0.2,
-                material,
-            }))
+            if choose_mat < 0.8 {
+                let velocity = Vector::new(0.0, rng.gen_range(0.0..0.5), 0.0);
+                world.add(bump.alloc(Sphere::<Linear> {
+                    center: (center, center + velocity),
+                    radius: 0.2,
+                    material,
+                }))
+            } else {
+                world.add(bump.alloc(Sphere::<Unchanging> {
+                    center,
+                    radius: 0.2,
+                    material,
+                }))
+            }
         }
     }
 
-    world.add(bump.alloc(Sphere {
+    world.add(bump.alloc(Sphere::<Unchanging> {
         center: Point::new(0., 1., 0.),
         radius: 1.,
         material: bump.alloc(Dielectric { ir: 1.5 }),
     }));
 
-    world.add(bump.alloc(Sphere {
+    world.add(bump.alloc(Sphere::<Unchanging> {
         center: Point::new(-4., 1., 0.),
         radius: 1.,
         material: bump.alloc(Lambertian {
@@ -73,7 +83,7 @@ fn main() {
         }),
     }));
 
-    world.add(bump.alloc(Sphere {
+    world.add(bump.alloc(Sphere::<Unchanging> {
         center: Point::new(4., 1., 0.),
         radius: 1.,
         material: bump.alloc(Metal {
@@ -85,8 +95,8 @@ fn main() {
     // camera
     let camera = CameraBuilder::default()
         .with_aspect_ratio(16. / 9.)
-        .with_image_width(1200)
-        .with_samples_per_pixel(500)
+        .with_image_width(400)
+        .with_samples_per_pixel(100)
         .with_max_depth(50)
         .with_vfov(20.)
         .with_lookfrom(Point::new(13., 2., 3.))

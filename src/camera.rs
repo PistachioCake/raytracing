@@ -247,8 +247,13 @@ impl Camera {
             self.defocus_disk_sample()
         };
         let direct = pixel_sample - origin;
+        let time = random();
 
-        Ray { origin, direct }
+        Ray {
+            origin,
+            direct,
+            time,
+        }
     }
 
     fn defocus_disk_sample(&self) -> Point {
