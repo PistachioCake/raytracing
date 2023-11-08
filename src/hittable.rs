@@ -1,3 +1,4 @@
+pub mod aabb;
 pub mod interval;
 pub mod sphere;
 
@@ -7,6 +8,7 @@ use crate::{
     units::{Point, Vector},
 };
 
+pub use self::aabb::AABB;
 pub use self::interval::Interval;
 pub use self::sphere::Sphere;
 
