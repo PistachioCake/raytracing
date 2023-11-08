@@ -1,4 +1,5 @@
 pub mod aabb;
+pub mod bvh;
 pub mod interval;
 pub mod sphere;
 
@@ -22,11 +23,12 @@ pub struct HitRecord<'a> {
 
 pub trait Hittable: Sync + Send {
     fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord>;
+    fn bounding_box(&self) -> AABB<f32>;
 }
 
-#[derive(Default)]
 pub struct HittableList<'a> {
-    pub objects: Vec<&'a dyn Hittable>,
+    objects: Vec<&'a dyn Hittable>,
+    aabb: AABB<f32>,
 }
 
 impl<'a> HitRecord<'a> {
@@ -54,15 +56,34 @@ impl<'a> HittableList<'a> {
     pub fn new() -> Self {
         Self {
             objects: Vec::new(),
+            aabb: AABB::EMPTY,
+        }
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            objects: Vec::with_capacity(capacity),
+            aabb: AABB::EMPTY,
         }
     }
 
     pub fn clear(&mut self) {
-        self.objects.clear()
+        self.objects.clear();
+        self.aabb = AABB::EMPTY;
     }
 
     pub fn add(&mut self, object: &'a dyn Hittable) {
-        self.objects.push(object)
+        self.objects.push(object);
+        self.aabb = self.aabb.combine(object.bounding_box());
+    }
+
+    pub fn from_vec(objects: Vec<&'a dyn Hittable>) -> Self {
+        let mut aabb = AABB::EMPTY;
+        for hittable in &objects {
+            aabb = aabb.combine(hittable.bounding_box());
+        }
+
+        Self { objects, aabb }
     }
 }
 
@@ -79,5 +100,9 @@ impl Hittable for HittableList<'_> {
         }
 
         hit_record
+    }
+
+    fn bounding_box(&self) -> AABB<f32> {
+        self.aabb
     }
 }

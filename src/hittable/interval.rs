@@ -50,4 +50,11 @@ impl Interval<f32> {
             max: self.max + padding,
         }
     }
+
+    pub fn combine(self, other: Self) -> Self {
+        Self {
+            min: self.min.min(other.min),
+            max: self.max.max(other.max),
+        }
+    }
 }

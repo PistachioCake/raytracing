@@ -1,11 +1,25 @@
 use crate::{material::Material, ray::Ray, time_utils::Movement, units::Point};
 
-use super::{HitRecord, Hittable, Interval};
+use super::{HitRecord, Hittable, Interval, AABB};
 
 pub struct Sphere<'a, Center: Movement<Point>> {
     pub center: Center::Storage,
     pub radius: f32,
     pub material: &'a dyn Material,
+    pub aabb: AABB<f32>,
+}
+
+impl<'a, Center: Movement<Point>> Sphere<'a, Center> {
+    pub fn new(center: Center::Storage, radius: f32, material: &'a dyn Material) -> Self {
+        let aabb = <Center as Movement<Point>>::bounding_box(&center).expand(radius * 2.0);
+
+        Sphere {
+            center,
+            radius,
+            material,
+            aabb,
+        }
+    }
 }
 
 impl<Center: Movement<Point>> Hittable for Sphere<'_, Center> {
@@ -13,6 +27,10 @@ impl<Center: Movement<Point>> Hittable for Sphere<'_, Center> {
         let center = <Center as Movement<_>>::get_at_time(&self.center, ray.time);
 
         sphere_hit(center, self.radius, self.material, ray, ray_t)
+    }
+
+    fn bounding_box(&self) -> AABB<f32> {
+        self.aabb
     }
 }
 

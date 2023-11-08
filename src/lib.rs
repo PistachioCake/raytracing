@@ -1,3 +1,5 @@
+#![feature(allocator_api)]
+
 pub mod camera;
 pub mod hittable;
 pub mod material;

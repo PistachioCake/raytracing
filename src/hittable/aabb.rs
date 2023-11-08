@@ -97,4 +97,20 @@ impl AABB<f32> {
 
         true
     }
+
+    pub fn expand(self, delta: f32) -> Self {
+        Self {
+            x: self.x.expand(delta),
+            y: self.y.expand(delta),
+            z: self.z.expand(delta),
+        }
+    }
+
+    pub fn combine(self, other: Self) -> Self {
+        Self {
+            x: self.x.combine(other.x),
+            y: self.y.combine(other.y),
+            z: self.z.combine(other.z),
+        }
+    }
 }

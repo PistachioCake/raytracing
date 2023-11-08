@@ -3,7 +3,7 @@ use rand::{random, thread_rng, Rng};
 
 use raytracing::{
     camera::CameraBuilder,
-    hittable::{HittableList, Sphere},
+    hittable::{bvh::BvhNode, Hittable, Sphere},
     material::{Dielectric, Lambertian, Material, Metal},
     time_utils::{Linear, Unchanging},
     units::{Color, Point, Vector},
@@ -14,18 +14,16 @@ fn main() {
     let mut rng = thread_rng();
 
     // world
-    let mut world = HittableList {
-        objects: Vec::with_capacity(124),
-    };
+    let mut objects: Vec<&dyn Hittable> = Vec::with_capacity(124);
 
     let ground_material = &(Lambertian {
         albedo: Color::new(0.5, 0.5, 0.5),
     });
-    world.add(bump.alloc(Sphere::<Unchanging> {
-        center: Point::new(0., -1000., 0.),
-        radius: 1000.,
-        material: ground_material,
-    }));
+    objects.push(bump.alloc(Sphere::<Unchanging>::new(
+        Point::new(0., -1000., 0.),
+        1000.,
+        ground_material,
+    )));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -56,43 +54,41 @@ fn main() {
 
             if choose_mat < 0.8 {
                 let velocity = Vector::new(0.0, rng.gen_range(0.0..0.5), 0.0);
-                world.add(bump.alloc(Sphere::<Linear> {
-                    center: (center, center + velocity),
-                    radius: 0.2,
+                objects.push(bump.alloc(Sphere::<Linear>::new(
+                    (center, center + velocity),
+                    0.2,
                     material,
-                }))
+                )))
             } else {
-                world.add(bump.alloc(Sphere::<Unchanging> {
-                    center,
-                    radius: 0.2,
-                    material,
-                }))
+                objects.push(bump.alloc(Sphere::<Unchanging>::new(center, 0.2, material)))
             }
         }
     }
 
-    world.add(bump.alloc(Sphere::<Unchanging> {
-        center: Point::new(0., 1., 0.),
-        radius: 1.,
-        material: bump.alloc(Dielectric { ir: 1.5 }),
-    }));
+    objects.push(bump.alloc(Sphere::<Unchanging>::new(
+        Point::new(0., 1., 0.),
+        1.,
+        bump.alloc(Dielectric { ir: 1.5 }),
+    )));
 
-    world.add(bump.alloc(Sphere::<Unchanging> {
-        center: Point::new(-4., 1., 0.),
-        radius: 1.,
-        material: bump.alloc(Lambertian {
+    objects.push(bump.alloc(Sphere::<Unchanging>::new(
+        Point::new(-4., 1., 0.),
+        1.,
+        bump.alloc(Lambertian {
             albedo: Color::new(0.4, 0.2, 0.1),
         }),
-    }));
+    )));
 
-    world.add(bump.alloc(Sphere::<Unchanging> {
-        center: Point::new(4., 1., 0.),
-        radius: 1.,
-        material: bump.alloc(Metal {
+    objects.push(bump.alloc(Sphere::<Unchanging>::new(
+        Point::new(4., 1., 0.),
+        1.,
+        bump.alloc(Metal {
             albedo: Color::new(0.7, 0.6, 0.5),
             fuzz: 1.,
         }),
-    }));
+    )));
+
+    let world = BvhNode::new(objects, &bump);
 
     // camera
     let camera = CameraBuilder::default()
