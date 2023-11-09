@@ -1,4 +1,9 @@
-use crate::{material::Material, ray::Ray, time_utils::Movement, units::Point};
+use crate::{
+    material::Material,
+    ray::Ray,
+    time_utils::Movement,
+    units::{Point, TexCoord},
+};
 
 use super::{HitRecord, Hittable, Interval, AABB};
 
@@ -60,5 +65,12 @@ fn sphere_hit<'a>(
     let p = ray.at(t);
     let outward_normal = (p - center) / radius;
 
-    Some(HitRecord::new(ray, p, outward_normal, material, t))
+    Some(HitRecord::new(
+        ray,
+        p,
+        outward_normal,
+        TexCoord::new(0.0, 0.0),
+        material,
+        t,
+    ))
 }

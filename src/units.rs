@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use glamour::{Point3, Unit, Vector3};
+use glamour::{Point2, Point3, Unit, Vector3};
 use rand::{distributions::Uniform, thread_rng, Rng};
 
 pub struct ColorSpace;
@@ -9,6 +9,21 @@ impl Unit for ColorSpace {
 }
 
 pub type Color = Vector3<ColorSpace>;
+
+pub struct WorldSpace;
+impl Unit for WorldSpace {
+    type Scalar = f32;
+}
+
+pub type Point = Point3<WorldSpace>;
+pub type Vector = Vector3<WorldSpace>;
+
+pub struct TextureSpace;
+impl Unit for TextureSpace {
+    type Scalar = f32;
+}
+
+pub type TexCoord = Point2<TextureSpace>;
 
 pub fn write_color(out: &mut dyn Write, c: Color) {
     let floats = c.as_array();
@@ -19,14 +34,6 @@ pub fn write_color(out: &mut dyn Write, c: Color) {
 
     writeln!(out, "{} {} {}", ints[0], ints[1], ints[2]).unwrap()
 }
-
-pub struct WorldSpace;
-impl Unit for WorldSpace {
-    type Scalar = f32;
-}
-
-pub type Point = Point3<WorldSpace>;
-pub type Vector = Vector3<WorldSpace>;
 
 pub fn random_in_unit_sphere() -> Vector {
     let mut rng = thread_rng();

@@ -5,6 +5,7 @@ use raytracing::{
     camera::CameraBuilder,
     hittable::{bvh::BvhNode, Hittable, Sphere},
     material::{Dielectric, Lambertian, Material, Metal},
+    texture::{GlobalChecker, SolidColor},
     time_utils::{Linear, Unchanging},
     units::{Color, Point, Vector},
 };
@@ -16,9 +17,15 @@ fn main() {
     // world
     let mut objects: Vec<&dyn Hittable> = Vec::with_capacity(124);
 
-    let ground_material = &(Lambertian {
-        albedo: Color::new(0.5, 0.5, 0.5),
+    let ground_material = bump.alloc(Lambertian {
+        albedo: bump.alloc(GlobalChecker::new_colors(
+            0.32,
+            Color::new(0.2, 0.3, 0.1),
+            Color::new(0.9, 0.9, 0.9),
+            &bump,
+        )),
     });
+
     objects.push(bump.alloc(Sphere::<Unchanging>::new(
         Point::new(0., -1000., 0.),
         1000.,
@@ -38,8 +45,10 @@ fn main() {
             let material: &dyn Material = if choose_mat < 0.8 {
                 let p1 = Color::new(rng.gen(), rng.gen(), rng.gen());
                 let p2 = Color::new(rng.gen(), rng.gen(), rng.gen());
-                let albedo = p1 * p2;
-                bump.alloc(Lambertian { albedo })
+                let color = p1 * p2;
+                bump.alloc(Lambertian {
+                    albedo: bump.alloc(SolidColor { color }),
+                })
             } else if choose_mat < 0.95 {
                 let albedo = Color::new(
                     rng.gen_range(0.5..1.),
@@ -75,7 +84,9 @@ fn main() {
         Point::new(-4., 1., 0.),
         1.,
         bump.alloc(Lambertian {
-            albedo: Color::new(0.4, 0.2, 0.1),
+            albedo: bump.alloc(SolidColor {
+                color: Color::new(0.4, 0.2, 0.1),
+            }),
         }),
     )));
 

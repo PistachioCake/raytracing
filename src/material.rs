@@ -3,6 +3,7 @@ use rand::random;
 use crate::{
     hittable::HitRecord,
     ray::Ray,
+    texture::Texture,
     units::{random_unit_vector, reflect, refract, Color},
 };
 
@@ -10,8 +11,8 @@ pub trait Material: Sync + Send {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)>;
 }
 
-pub struct Lambertian {
-    pub albedo: Color,
+pub struct Lambertian<'a> {
+    pub albedo: &'a dyn Texture,
 }
 
 pub struct Metal {
@@ -23,7 +24,7 @@ pub struct Dielectric {
     pub ir: f32,
 }
 
-impl Material for Lambertian {
+impl Material for Lambertian<'_> {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
         let direct = {
             let direct = hit.normal + random_unit_vector();
@@ -40,7 +41,9 @@ impl Material for Lambertian {
             time: ray.time,
         };
 
-        Some((self.albedo, scattered))
+        let color = self.albedo.value(hit.uv, hit.p);
+
+        Some((color, scattered))
     }
 }
 

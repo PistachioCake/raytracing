@@ -6,7 +6,7 @@ pub mod sphere;
 use crate::{
     material::Material,
     ray::Ray,
-    units::{Point, Vector},
+    units::{Point, TexCoord, Vector},
 };
 
 pub use self::aabb::AABB;
@@ -18,6 +18,7 @@ pub struct HitRecord<'a> {
     pub normal: Vector,
     pub mat: &'a dyn Material,
     pub t: f32,
+    pub uv: TexCoord,
     pub front_face: bool,
 }
 
@@ -32,7 +33,14 @@ pub struct HittableList<'a> {
 }
 
 impl<'a> HitRecord<'a> {
-    pub fn new(ray: &Ray, p: Point, outward_normal: Vector, mat: &'a dyn Material, t: f32) -> Self {
+    pub fn new(
+        ray: &Ray,
+        p: Point,
+        outward_normal: Vector,
+        uv: TexCoord,
+        mat: &'a dyn Material,
+        t: f32,
+    ) -> Self {
         // let p = ray.at(t);
         let front_face = ray.direct.dot(outward_normal) < 0.;
 
@@ -47,6 +55,7 @@ impl<'a> HitRecord<'a> {
             normal,
             t,
             front_face,
+            uv,
             mat,
         }
     }
