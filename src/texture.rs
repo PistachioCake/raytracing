@@ -1,4 +1,6 @@
-use std::alloc::Allocator;
+use std::{alloc::Allocator, path::Path};
+
+use image::{io::Reader, RgbImage};
 
 use crate::units::{Color, Point, TexCoord};
 
@@ -55,5 +57,34 @@ impl Texture for GlobalChecker<'_> {
             == 0;
 
         (if is_even { self.even } else { self.odd }).value(uv, point)
+    }
+}
+
+pub struct ImageTexture {
+    image: RgbImage,
+}
+
+impl Texture for ImageTexture {
+    fn value(&self, uv: TexCoord, _point: Point) -> Color {
+        if self.image.is_empty() {
+            return Color::new(0.0, 1.0, 1.0);
+        }
+
+        let u = uv.x.clamp(0.0, 1.0);
+        let v = 1.0 - uv.y.clamp(0.0, 1.0);
+
+        let i = (u * self.image.width() as f32).floor() as u32;
+        let j = (v * self.image.height() as f32).floor() as u32;
+        let pixel = self.image.get_pixel(i, j).0;
+
+        Color::from_array(pixel.map(|channel| channel as f32 / 255.0))
+    }
+}
+
+impl ImageTexture {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Option<Self> {
+        let image = Reader::open(path).ok()?.decode().ok()?.into_rgb8();
+
+        Some(Self { image })
     }
 }

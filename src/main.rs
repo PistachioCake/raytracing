@@ -9,15 +9,16 @@ use raytracing::{
     camera::CameraBuilder,
     hittable::{bvh::BvhNode, Hittable, HittableList, Sphere},
     material::{Dielectric, Lambertian, Material, Metal},
-    texture::{GlobalChecker, SolidColor},
+    texture::{GlobalChecker, ImageTexture, SolidColor},
     time_utils::{Linear, Unchanging},
     units::{Color, Point, Vector},
 };
 
 fn main() {
-    let world = match 2 {
+    let world = match 3 {
         1 => random_spheres(),
         2 => two_spheres(),
+        3 => earth(),
         _ => unimplemented!(),
     };
 
@@ -35,6 +36,20 @@ fn main() {
     let camera = camera.build();
 
     camera.render(world);
+}
+
+fn earth() -> &'static dyn Hittable {
+    fn leak<T>(x: T) -> &'static T {
+        Box::leak(Box::new(x))
+    }
+
+    let earth_texture = leak(ImageTexture::from_path("images/earthmap.jpg").unwrap());
+    let earth_surface = leak(Lambertian {
+        albedo: earth_texture,
+    });
+    let globe = leak(Sphere::<Unchanging>::new(Point::ZERO, 2.0, earth_surface));
+
+    globe
 }
 
 fn two_spheres() -> &'static dyn Hittable {
