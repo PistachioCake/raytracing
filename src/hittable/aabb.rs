@@ -54,6 +54,12 @@ impl AABB<f32> {
     };
 }
 
+impl Default for AABB<f32> {
+    fn default() -> Self {
+        Self::EMPTY
+    }
+}
+
 impl<T> Index<usize> for AABB<T> {
     type Output = Interval<T>;
 

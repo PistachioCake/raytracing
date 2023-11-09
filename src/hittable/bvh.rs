@@ -79,6 +79,6 @@ impl Hittable for BvhNode<'_> {
     }
 
     fn bounding_box(&self) -> AABB<f32> {
-        return self.aabb;
+        self.aabb
     }
 }

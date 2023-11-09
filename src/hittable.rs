@@ -27,6 +27,7 @@ pub trait Hittable: Sync + Send {
     fn bounding_box(&self) -> AABB<f32>;
 }
 
+#[derive(Default)]
 pub struct HittableList<'a> {
     objects: Vec<&'a dyn Hittable>,
     aabb: AABB<f32>,
