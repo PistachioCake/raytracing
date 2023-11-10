@@ -46,7 +46,7 @@ fn two_perlin_spheres() -> &'static dyn Hittable {
 
     let mut world = HittableList::with_capacity(2);
 
-    let perlin = leak(NoiseTexture::new());
+    let perlin = leak(NoiseTexture::new(4.0));
     let material = leak(Lambertian { albedo: perlin });
 
     world.add(leak(Sphere::<Unchanging>::new(
