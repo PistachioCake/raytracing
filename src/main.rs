@@ -9,16 +9,17 @@ use raytracing::{
     camera::CameraBuilder,
     hittable::{bvh::BvhNode, Hittable, HittableList, Sphere},
     material::{Dielectric, Lambertian, Material, Metal},
-    texture::{GlobalChecker, ImageTexture, SolidColor},
+    texture::{perlin::NoiseTexture, GlobalChecker, ImageTexture, SolidColor},
     time_utils::{Linear, Unchanging},
     units::{Color, Point, Vector},
 };
 
 fn main() {
-    let world = match 3 {
+    let world = match 4 {
         1 => random_spheres(),
         2 => two_spheres(),
         3 => earth(),
+        4 => two_perlin_spheres(),
         _ => unimplemented!(),
     };
 
@@ -36,6 +37,31 @@ fn main() {
     let camera = camera.build();
 
     camera.render(world);
+}
+
+fn two_perlin_spheres() -> &'static dyn Hittable {
+    fn leak<T>(x: T) -> &'static T {
+        Box::leak(Box::new(x))
+    }
+
+    let mut world = HittableList::with_capacity(2);
+
+    let perlin = leak(NoiseTexture::new());
+    let material = leak(Lambertian { albedo: perlin });
+
+    world.add(leak(Sphere::<Unchanging>::new(
+        Point::new(0.0, -1000.0, 0.0),
+        1000.0,
+        material,
+    )));
+
+    world.add(leak(Sphere::<Unchanging>::new(
+        Point::new(0.0, 2.0, 0.0),
+        2.0,
+        material,
+    )));
+
+    leak(world)
 }
 
 fn earth() -> &'static dyn Hittable {

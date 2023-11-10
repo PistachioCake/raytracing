@@ -4,6 +4,8 @@ use image::{io::Reader, RgbImage};
 
 use crate::units::{Color, Point, TexCoord};
 
+pub mod perlin;
+
 pub trait Texture: Sync + Send {
     fn value(&self, uv: TexCoord, point: Point) -> Color;
 }
