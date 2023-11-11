@@ -29,19 +29,80 @@ fn main() {
         .with_max_depth(50)
         .with_background(Color::new(0.7, 0.8, 1.0));
 
-    let world = match 6 {
+    let world = match 7 {
         1 => random_spheres(),
         2 => two_spheres(),
         3 => earth(),
         4 => two_perlin_spheres(),
         5 => quads(&mut camera),
         6 => simple_light(&mut camera),
+        7 => cornell_box(&mut camera),
         _ => unimplemented!(),
     };
 
     let camera = camera.build();
 
     camera.render(world);
+}
+
+fn cornell_box(camera: &mut CameraBuilder) -> &'static dyn Hittable {
+    let mut world = HittableList::with_capacity(6);
+
+    let red = lambertian_with_color(Color::new(0.65, 0.05, 0.05));
+    let white = lambertian_with_color(Color::new(0.73, 0.73, 0.74));
+    let green = lambertian_with_color(Color::new(0.12, 0.45, 0.15));
+    let light = leak(DiffuseLight::new_with_color(
+        Color::new(15.0, 15.0, 15.0),
+        Global::default(),
+    ));
+
+    world.add(leak(Quad::new(
+        Point::new(555.0, 0.0, 0.0),
+        Vector::new(0.0, 555.0, 0.0),
+        Vector::new(0.0, 0.0, 555.0),
+        green,
+    )));
+    world.add(leak(Quad::new(
+        Point::new(0.0, 0.0, 0.0),
+        Vector::new(0.0, 555.0, 0.0),
+        Vector::new(0.0, 0.0, 555.0),
+        red,
+    )));
+    world.add(leak(Quad::new(
+        Point::new(343.0, 554.0, 332.0),
+        Vector::new(-130.0, 0.0, 0.0),
+        Vector::new(0.0, 0.0, -105.0),
+        light,
+    )));
+    world.add(leak(Quad::new(
+        Point::new(0.0, 0.0, 0.0),
+        Vector::new(555.0, 0.0, 0.0),
+        Vector::new(0.0, 0.0, 555.0),
+        white,
+    )));
+    world.add(leak(Quad::new(
+        Point::new(555.0, 555.0, 555.0),
+        Vector::new(-555.0, 0.0, 0.0),
+        Vector::new(0.0, 0.0, -555.0),
+        white,
+    )));
+    world.add(leak(Quad::new(
+        Point::new(0.0, 0.0, 555.0),
+        Vector::new(555.0, 0.0, 0.0),
+        Vector::new(0.0, 555.0, 0.0),
+        white,
+    )));
+
+    camera
+        .with_aspect_ratio(1.0)
+        .with_image_width(600)
+        .with_samples_per_pixel(200)
+        .with_background(Color::ZERO)
+        .with_vfov(40.0)
+        .with_lookfrom(Point::new(278.0, 278.0, -600.0))
+        .with_lookat(Point::new(278.0, 278.0, 0.0));
+
+    leak(world)
 }
 
 fn simple_light(camera: &mut CameraBuilder) -> &'static dyn Hittable {
@@ -88,12 +149,6 @@ fn simple_light(camera: &mut CameraBuilder) -> &'static dyn Hittable {
 }
 
 fn quads(camera: &mut CameraBuilder) -> &'static dyn Hittable {
-    fn lambertian_with_color(color: Color) -> &'static Lambertian<'static> {
-        leak(Lambertian {
-            albedo: leak(SolidColor { color }),
-        })
-    }
-
     let left_red = lambertian_with_color(Color::new(1.0, 0.2, 0.2));
     let back_green = lambertian_with_color(Color::new(0.2, 1.0, 0.2));
     let right_blue = lambertian_with_color(Color::new(0.2, 0.2, 1.0));
@@ -296,4 +351,10 @@ fn random_spheres() -> &'static dyn Hittable {
 
 fn leak<T>(x: T) -> &'static T {
     Box::leak(Box::new(x))
+}
+
+fn lambertian_with_color(color: Color) -> &'static Lambertian<'static> {
+    leak(Lambertian {
+        albedo: leak(SolidColor { color }),
+    })
 }
