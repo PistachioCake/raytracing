@@ -1,6 +1,7 @@
 pub mod aabb;
 pub mod bvh;
 pub mod interval;
+pub mod quad;
 pub mod sphere;
 
 use crate::{

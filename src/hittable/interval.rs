@@ -57,4 +57,8 @@ impl Interval<f32> {
             max: self.max.max(other.max),
         }
     }
+
+    pub fn size(self) -> f32 {
+        self.max - self.min
+    }
 }

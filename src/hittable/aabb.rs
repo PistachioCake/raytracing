@@ -119,4 +119,15 @@ impl AABB<f32> {
             z: self.z.combine(other.z),
         }
     }
+
+    pub fn pad(mut self) -> Self {
+        let delta = f32::EPSILON;
+
+        for axis in 0..3 {
+            if self[axis].size() < delta {
+                self[axis] = self[axis].expand(delta);
+            }
+        }
+        self
+    }
 }

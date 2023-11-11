@@ -64,57 +64,57 @@ impl Default for CameraBuilder {
 }
 
 impl CameraBuilder {
-    pub fn with_aspect_ratio(mut self, aspect_ratio: f32) -> Self {
+    pub fn with_aspect_ratio(&mut self, aspect_ratio: f32) -> &mut Self {
         self.aspect_ratio = aspect_ratio;
         self
     }
 
-    pub fn with_image_width(mut self, image_width: i32) -> Self {
+    pub fn with_image_width(&mut self, image_width: i32) -> &mut Self {
         self.image_width = Some(image_width);
         self
     }
 
-    pub fn with_image_height(mut self, image_height: i32) -> Self {
+    pub fn with_image_height(&mut self, image_height: i32) -> &mut Self {
         self.image_height = Some(image_height);
         self
     }
 
-    pub fn with_samples_per_pixel(mut self, samples_per_pixel: i32) -> Self {
+    pub fn with_samples_per_pixel(&mut self, samples_per_pixel: i32) -> &mut Self {
         self.samples_per_pixel = samples_per_pixel;
         self
     }
 
-    pub fn with_max_depth(mut self, max_depth: i32) -> Self {
+    pub fn with_max_depth(&mut self, max_depth: i32) -> &mut Self {
         self.max_depth = max_depth;
         self
     }
 
-    pub fn with_vfov(mut self, vfov: f32) -> Self {
+    pub fn with_vfov(&mut self, vfov: f32) -> &mut Self {
         self.vfov = vfov;
         self
     }
 
-    pub fn with_lookfrom(mut self, lookfrom: Point) -> Self {
+    pub fn with_lookfrom(&mut self, lookfrom: Point) -> &mut Self {
         self.lookfrom = lookfrom;
         self
     }
 
-    pub fn with_lookat(mut self, lookat: Point) -> Self {
+    pub fn with_lookat(&mut self, lookat: Point) -> &mut Self {
         self.lookat = lookat;
         self
     }
 
-    pub fn with_vup(mut self, vup: Vector) -> Self {
+    pub fn with_vup(&mut self, vup: Vector) -> &mut Self {
         self.vup = vup;
         self
     }
 
-    pub fn with_defocus_angle(mut self, defocus_angle: f32) -> Self {
+    pub fn with_defocus_angle(&mut self, defocus_angle: f32) -> &mut Self {
         self.defocus_angle = defocus_angle;
         self
     }
 
-    pub fn with_focus_dist(mut self, focus_dist: f32) -> Self {
+    pub fn with_focus_dist(&mut self, focus_dist: f32) -> &mut Self {
         self.focus_dist = focus_dist;
         self
     }

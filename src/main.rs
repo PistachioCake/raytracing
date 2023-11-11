@@ -7,7 +7,7 @@ use rand::{thread_rng, Rng};
 
 use raytracing::{
     camera::CameraBuilder,
-    hittable::{bvh::BvhNode, Hittable, HittableList, Sphere},
+    hittable::{bvh::BvhNode, quad::Quad, Hittable, HittableList, Sphere},
     material::{Dielectric, Lambertian, Material, Metal},
     texture::{perlin::NoiseTexture, GlobalChecker, ImageTexture, SolidColor},
     time_utils::{Linear, Unchanging},
@@ -15,15 +15,8 @@ use raytracing::{
 };
 
 fn main() {
-    let world = match 4 {
-        1 => random_spheres(),
-        2 => two_spheres(),
-        3 => earth(),
-        4 => two_perlin_spheres(),
-        _ => unimplemented!(),
-    };
-
-    let camera = CameraBuilder::default()
+    let mut camera = CameraBuilder::default();
+    camera
         .with_aspect_ratio(16. / 9.)
         .with_image_width(400)
         .with_samples_per_pixel(100)
@@ -34,9 +27,82 @@ fn main() {
         .with_vup(Vector::new(0., 1., 0.))
         .with_defocus_angle(0.6)
         .with_focus_dist(10.);
+
+    let world = match 5 {
+        1 => random_spheres(),
+        2 => two_spheres(),
+        3 => earth(),
+        4 => two_perlin_spheres(),
+        5 => quads(&mut camera),
+        _ => unimplemented!(),
+    };
+
     let camera = camera.build();
 
     camera.render(world);
+}
+
+fn quads(camera: &mut CameraBuilder) -> &'static dyn Hittable {
+    fn leak<T>(x: T) -> &'static T {
+        Box::leak(Box::new(x))
+    }
+
+    fn lambertian_with_color(color: Color) -> &'static Lambertian<'static> {
+        leak(Lambertian {
+            albedo: leak(SolidColor { color }),
+        })
+    }
+
+    let left_red = lambertian_with_color(Color::new(1.0, 0.2, 0.2));
+    let back_green = lambertian_with_color(Color::new(0.2, 1.0, 0.2));
+    let right_blue = lambertian_with_color(Color::new(0.2, 0.2, 1.0));
+    let upper_orange = lambertian_with_color(Color::new(1.0, 0.5, 0.2));
+    let lower_teal = lambertian_with_color(Color::new(0.2, 0.8, 0.8));
+
+    let mut world = HittableList::with_capacity(5);
+
+    world.add(leak(Quad::new(
+        Point::new(-3.0, -2.0, 5.0),
+        Vector::new(0.0, 0.0, -4.0),
+        Vector::new(0.0, 4.0, 0.0),
+        left_red,
+    )));
+
+    world.add(leak(Quad::new(
+        Point::new(-2.0, -2.0, 0.0),
+        Vector::new(4.0, 0.0, 0.0),
+        Vector::new(0.0, 4.0, 0.0),
+        back_green,
+    )));
+
+    world.add(leak(Quad::new(
+        Point::new(3.0, -2.0, 1.0),
+        Vector::new(0.0, 0.0, 4.0),
+        Vector::new(0.0, 4.0, 0.0),
+        right_blue,
+    )));
+
+    world.add(leak(Quad::new(
+        Point::new(-2.0, 3.0, 1.0),
+        Vector::new(4.0, 0.0, 0.0),
+        Vector::new(0.0, 0.0, 4.0),
+        upper_orange,
+    )));
+
+    world.add(leak(Quad::new(
+        Point::new(-2.0, -3.0, 5.0),
+        Vector::new(4.0, 0.0, 0.0),
+        Vector::new(0.0, 0.0, -4.0),
+        lower_teal,
+    )));
+
+    camera
+        .with_aspect_ratio(1.0)
+        .with_lookfrom(Point::new(0.0, 0.0, 9.0))
+        .with_vfov(80.0)
+        .with_defocus_angle(0.0);
+
+    leak(world)
 }
 
 fn two_perlin_spheres() -> &'static dyn Hittable {

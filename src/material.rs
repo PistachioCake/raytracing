@@ -1,9 +1,11 @@
+use std::alloc::Allocator;
+
 use rand::random;
 
 use crate::{
     hittable::HitRecord,
     ray::Ray,
-    texture::Texture,
+    texture::{SolidColor, Texture},
     units::{random_unit_vector, reflect, refract, Color},
 };
 
@@ -22,6 +24,13 @@ pub struct Metal {
 
 pub struct Dielectric {
     pub ir: f32,
+}
+
+impl<'a> Lambertian<'a> {
+    pub fn new_with_color<A: Allocator + 'a>(color: Color, alloc: A) -> Self {
+        let color = Box::leak(Box::new_in(SolidColor { color }, alloc));
+        Self { albedo: color }
+    }
 }
 
 impl Material for Lambertian<'_> {
