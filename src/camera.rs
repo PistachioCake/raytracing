@@ -15,9 +15,6 @@ pub struct CameraBuilder {
     image_width: Option<i32>,
     image_height: Option<i32>,
 
-    samples_per_pixel: i32,
-    max_depth: i32,
-
     vfov: f32,
     lookfrom: Point,
     lookat: Point,
@@ -25,6 +22,10 @@ pub struct CameraBuilder {
 
     defocus_angle: f32,
     focus_dist: f32,
+
+    samples_per_pixel: i32,
+    max_depth: i32,
+    background: Color,
 }
 
 pub struct Camera {
@@ -43,6 +44,7 @@ pub struct Camera {
 
     samples_per_pixel: i32,
     max_depth: i32,
+    background: Color,
 }
 
 impl Default for CameraBuilder {
@@ -51,14 +53,15 @@ impl Default for CameraBuilder {
             aspect_ratio: 1.,
             image_width: Some(100),
             image_height: None,
-            samples_per_pixel: 10,
-            max_depth: 10,
             vfov: 1.,
             lookfrom: Point::new(0., 0., -1.),
             lookat: Point::new(0., 0., 0.),
             vup: Vector::new(0., 1., 0.),
             defocus_angle: 0.,
             focus_dist: 10.,
+            samples_per_pixel: 10,
+            max_depth: 10,
+            background: Color::ZERO,
         }
     }
 }
@@ -76,16 +79,6 @@ impl CameraBuilder {
 
     pub fn with_image_height(&mut self, image_height: i32) -> &mut Self {
         self.image_height = Some(image_height);
-        self
-    }
-
-    pub fn with_samples_per_pixel(&mut self, samples_per_pixel: i32) -> &mut Self {
-        self.samples_per_pixel = samples_per_pixel;
-        self
-    }
-
-    pub fn with_max_depth(&mut self, max_depth: i32) -> &mut Self {
-        self.max_depth = max_depth;
         self
     }
 
@@ -119,19 +112,35 @@ impl CameraBuilder {
         self
     }
 
+    pub fn with_samples_per_pixel(&mut self, samples_per_pixel: i32) -> &mut Self {
+        self.samples_per_pixel = samples_per_pixel;
+        self
+    }
+
+    pub fn with_max_depth(&mut self, max_depth: i32) -> &mut Self {
+        self.max_depth = max_depth;
+        self
+    }
+
+    pub fn with_background(&mut self, background: Color) -> &mut Self {
+        self.background = background;
+        self
+    }
+
     pub fn build(self) -> Camera {
         let CameraBuilder {
             aspect_ratio,
             image_width,
             image_height,
-            samples_per_pixel,
-            max_depth,
             vfov,
             lookfrom,
             lookat,
             vup,
             defocus_angle,
             focus_dist,
+            samples_per_pixel,
+            max_depth,
+            background,
         } = self;
 
         let (image_width, image_height) = match (image_width, image_height) {
@@ -188,6 +197,7 @@ impl CameraBuilder {
             defocus_disk_v,
             samples_per_pixel,
             max_depth,
+            background,
         }
     }
 }
@@ -204,7 +214,8 @@ impl Camera {
                         for _ in 0..self.samples_per_pixel {
                             let ray = self.get_ray(i, j);
 
-                            color += Camera::ray_color(&ray, world, self.max_depth);
+                            color +=
+                                Camera::ray_color(&ray, world, self.background, self.max_depth);
                         }
 
                         color /= self.samples_per_pixel as f32;
@@ -261,22 +272,25 @@ impl Camera {
         self.center + self.defocus_disk_u * p.x + self.defocus_disk_v * p.y
     }
 
-    fn ray_color(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
+    fn ray_color(ray: &Ray, world: &dyn Hittable, background: Color, depth: i32) -> Color {
         if depth <= 0 {
             return Color::ZERO;
         }
 
-        let hit = world.hit(ray, Interval::<f32>::POSITIVE);
-        if let Some(hit) = hit {
-            if let Some((attenuation, scattered)) = hit.mat.scatter(ray, &hit) {
-                return Self::ray_color(&scattered, world, depth - 1) * attenuation;
-            }
-            return Color::ZERO;
-        }
+        if let Some(hit) = world.hit(ray, Interval::<f32>::POSITIVE) {
+            let hit_info = hit.mat.hit_info(ray, &hit);
+            let mut color = Color::ZERO;
 
-        let unit_direct = ray.direct.normalize();
-        let a = (unit_direct.y + 1.) / 2.;
-        Color::new(1., 1., 1.) * (1. - a) + Color::new(0.5, 0.7, 1.0) * a
+            if let Some((attenuation, scattered)) = hit_info.scatter {
+                color += Self::ray_color(&scattered, world, background, depth - 1) * attenuation;
+            }
+            if let Some(emit) = hit_info.emit {
+                color += emit;
+            }
+            color
+        } else {
+            background
+        }
     }
 
     fn pixel_sample_square(&self) -> Vector {

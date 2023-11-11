@@ -19,14 +19,15 @@ fn main() {
     camera
         .with_aspect_ratio(16. / 9.)
         .with_image_width(400)
-        .with_samples_per_pixel(100)
-        .with_max_depth(50)
         .with_vfov(20.)
         .with_lookfrom(Point::new(13., 2., 3.))
         .with_lookat(Point::new(0., 0., 0.))
         .with_vup(Vector::new(0., 1., 0.))
         .with_defocus_angle(0.6)
-        .with_focus_dist(10.);
+        .with_focus_dist(10.)
+        .with_samples_per_pixel(100)
+        .with_max_depth(50)
+        .with_background(Color::new(0.7, 0.8, 1.0));
 
     let world = match 5 {
         1 => random_spheres(),

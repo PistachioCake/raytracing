@@ -9,8 +9,13 @@ use crate::{
     units::{random_unit_vector, reflect, refract, Color},
 };
 
+pub struct MatRecord {
+    pub scatter: Option<(Color, Ray)>,
+    pub emit: Option<Color>,
+}
+
 pub trait Material: Sync + Send {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)>;
+    fn hit_info(&self, ray: &Ray, hit: &HitRecord) -> MatRecord;
 }
 
 pub struct Lambertian<'a> {
@@ -26,6 +31,10 @@ pub struct Dielectric {
     pub ir: f32,
 }
 
+pub struct DiffuseLight<'a> {
+    pub emit: &'a dyn Texture,
+}
+
 impl<'a> Lambertian<'a> {
     pub fn new_with_color<A: Allocator + 'a>(color: Color, alloc: A) -> Self {
         let color = Box::leak(Box::new_in(SolidColor { color }, alloc));
@@ -34,7 +43,7 @@ impl<'a> Lambertian<'a> {
 }
 
 impl Material for Lambertian<'_> {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
+    fn hit_info(&self, ray: &Ray, hit: &HitRecord) -> MatRecord {
         let direct = {
             let direct = hit.normal + random_unit_vector();
             if direct.max_element() < f32::EPSILON {
@@ -52,12 +61,15 @@ impl Material for Lambertian<'_> {
 
         let color = self.albedo.value(hit.uv, hit.p);
 
-        Some((color, scattered))
+        MatRecord {
+            scatter: Some((color, scattered)),
+            emit: None,
+        }
     }
 }
 
 impl Material for Metal {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
+    fn hit_info(&self, ray: &Ray, hit: &HitRecord) -> MatRecord {
         let reflected = reflect(&ray.direct, &hit.normal);
 
         let scattered = Ray {
@@ -66,7 +78,10 @@ impl Material for Metal {
             time: ray.time,
         };
 
-        Some((self.albedo, scattered))
+        MatRecord {
+            scatter: Some((self.albedo, scattered)),
+            emit: None,
+        }
     }
 }
 
@@ -79,7 +94,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Color, Ray)> {
+    fn hit_info(&self, ray: &Ray, hit: &HitRecord) -> MatRecord {
         let attenuation = Color::ONE;
         let refraction_ratio = if hit.front_face {
             self.ir.recip()
@@ -107,6 +122,27 @@ impl Material for Dielectric {
             time: ray.time,
         };
 
-        Some((attenuation, scattered))
+        MatRecord {
+            scatter: Some((attenuation, scattered)),
+            emit: None,
+        }
+    }
+}
+
+impl<'a> DiffuseLight<'a> {
+    pub fn new_with_color<A: Allocator + 'a>(color: Color, alloc: A) -> Self {
+        let color = Box::leak(Box::new_in(SolidColor { color }, alloc));
+        Self { emit: color }
+    }
+}
+
+impl Material for DiffuseLight<'_> {
+    fn hit_info(&self, ray: &Ray, hit: &HitRecord) -> MatRecord {
+        let color = self.emit.value(hit.uv, hit.p);
+
+        MatRecord {
+            scatter: None,
+            emit: Some(color),
+        }
     }
 }
