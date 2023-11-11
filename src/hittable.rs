@@ -1,5 +1,6 @@
 pub mod aabb;
 pub mod bvh;
+pub mod instances;
 pub mod interval;
 pub mod quad;
 pub mod sphere;

@@ -58,7 +58,21 @@ impl Interval<f32> {
         }
     }
 
+    pub fn insert(self, point: f32) -> Self {
+        Self {
+            min: self.min.min(point),
+            max: self.max.max(point),
+        }
+    }
+
     pub fn size(self) -> f32 {
         self.max - self.min
+    }
+
+    pub fn offset(self, offset: f32) -> Self {
+        Self {
+            min: self.min + offset,
+            max: self.max + offset,
+        }
     }
 }

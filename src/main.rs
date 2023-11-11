@@ -7,7 +7,12 @@ use rand::{thread_rng, Rng};
 
 use raytracing::{
     camera::CameraBuilder,
-    hittable::{bvh::BvhNode, quad::Quad, Hittable, HittableList, Sphere},
+    hittable::{
+        bvh::BvhNode,
+        instances::{Rotate, Translate},
+        quad::Quad,
+        Hittable, HittableList, Sphere,
+    },
     material::{Dielectric, DiffuseLight, Lambertian, Material, Metal},
     texture::{perlin::NoiseTexture, GlobalChecker, ImageTexture, SolidColor},
     time_utils::{Linear, Unchanging},
@@ -46,51 +51,74 @@ fn main() {
 }
 
 fn cornell_box(camera: &mut CameraBuilder) -> &'static dyn Hittable {
-    let mut world = HittableList::with_capacity(6);
+    let bump = leak(Bump::new());
+    let mut world = HittableList::with_capacity(12);
 
     let red = lambertian_with_color(Color::new(0.65, 0.05, 0.05));
     let white = lambertian_with_color(Color::new(0.73, 0.73, 0.74));
     let green = lambertian_with_color(Color::new(0.12, 0.45, 0.15));
-    let light = leak(DiffuseLight::new_with_color(
+    let light = bump.alloc(DiffuseLight::new_with_color(
         Color::new(15.0, 15.0, 15.0),
         Global::default(),
     ));
 
-    world.add(leak(Quad::new(
+    world.add(bump.alloc(Quad::new(
         Point::new(555.0, 0.0, 0.0),
-        Vector::new(0.0, 555.0, 0.0),
         Vector::new(0.0, 0.0, 555.0),
+        Vector::new(0.0, 555.0, 0.0),
         green,
     )));
-    world.add(leak(Quad::new(
+    world.add(bump.alloc(Quad::new(
         Point::new(0.0, 0.0, 0.0),
         Vector::new(0.0, 555.0, 0.0),
         Vector::new(0.0, 0.0, 555.0),
         red,
     )));
-    world.add(leak(Quad::new(
+    world.add(bump.alloc(Quad::new(
         Point::new(343.0, 554.0, 332.0),
         Vector::new(-130.0, 0.0, 0.0),
         Vector::new(0.0, 0.0, -105.0),
         light,
     )));
-    world.add(leak(Quad::new(
+    world.add(bump.alloc(Quad::new(
         Point::new(0.0, 0.0, 0.0),
-        Vector::new(555.0, 0.0, 0.0),
         Vector::new(0.0, 0.0, 555.0),
+        Vector::new(555.0, 0.0, 0.0),
         white,
     )));
-    world.add(leak(Quad::new(
+    world.add(bump.alloc(Quad::new(
         Point::new(555.0, 555.0, 555.0),
         Vector::new(-555.0, 0.0, 0.0),
         Vector::new(0.0, 0.0, -555.0),
         white,
     )));
-    world.add(leak(Quad::new(
+    world.add(bump.alloc(Quad::new(
         Point::new(0.0, 0.0, 555.0),
-        Vector::new(555.0, 0.0, 0.0),
         Vector::new(0.0, 555.0, 0.0),
+        Vector::new(555.0, 0.0, 0.0),
         white,
+    )));
+
+    let box1 = Quad::new_box(Point::ZERO, Point::new(165.0, 330.0, 165.0), white);
+    let box1 = HittableList::from_vec(
+        box1.into_iter()
+            .map::<&'static dyn Hittable, _>(|face| bump.alloc(face))
+            .collect(),
+    );
+    world.add(bump.alloc(Translate::new(
+        bump.alloc(Rotate::<1>::new(bump.alloc(box1), 15.0)),
+        Vector::new(265.0, 0.0, 295.0),
+    )));
+
+    let box2 = Quad::new_box(Point::ZERO, Point::splat(165.0), white);
+    let box2 = HittableList::from_vec(
+        box2.into_iter()
+            .map::<&'static dyn Hittable, _>(|face| bump.alloc(face))
+            .collect(),
+    );
+    world.add(bump.alloc(Translate::new(
+        bump.alloc(Rotate::<1>::new(bump.alloc(box2), -18.0)),
+        Vector::new(130.0, 0.0, 65.0),
     )));
 
     camera
@@ -100,9 +128,10 @@ fn cornell_box(camera: &mut CameraBuilder) -> &'static dyn Hittable {
         .with_background(Color::ZERO)
         .with_vfov(40.0)
         .with_lookfrom(Point::new(278.0, 278.0, -600.0))
-        .with_lookat(Point::new(278.0, 278.0, 0.0));
+        .with_lookat(Point::new(278.0, 278.0, 0.0))
+        .with_defocus_angle(0.0);
 
-    leak(world)
+    bump.alloc(world)
 }
 
 fn simple_light(camera: &mut CameraBuilder) -> &'static dyn Hittable {
@@ -260,7 +289,7 @@ fn two_spheres() -> &'static dyn Hittable {
 }
 
 fn random_spheres() -> &'static dyn Hittable {
-    let bump: &_ = Box::leak(Box::new(Bump::new()));
+    let bump: &_ = leak(Bump::new());
     let mut rng = thread_rng();
 
     let mut objects: Vec<&dyn Hittable> = Vec::with_capacity(124);

@@ -1,8 +1,9 @@
 use std::ops::{Index, IndexMut};
 
+use glam::BVec3;
 use glamour::{Point3, Unit};
 
-use crate::ray::Ray;
+use crate::{ray::Ray, units::Vector};
 
 use super::Interval;
 
@@ -18,7 +19,7 @@ impl<T> AABB<T> {
         Self { x, y, z }
     }
 
-    pub fn from_corners<U: Unit>(a: Point3<U>, b: Point3<U>) -> AABB<U::Scalar> {
+    pub fn from_corners<U: Unit<Scalar = T>>(a: Point3<U>, b: Point3<U>) -> Self {
         let lo = a.min(b);
         let hi = a.max(b);
 
@@ -120,6 +121,14 @@ impl AABB<f32> {
         }
     }
 
+    pub fn insert<U: Unit<Scalar = f32>>(self, point: Point3<U>) -> Self {
+        Self {
+            x: self.x.insert(point.x),
+            y: self.y.insert(point.y),
+            z: self.z.insert(point.z),
+        }
+    }
+
     pub fn pad(mut self) -> Self {
         let delta = f32::EPSILON;
 
@@ -129,5 +138,23 @@ impl AABB<f32> {
             }
         }
         self
+    }
+
+    pub fn offset(mut self, offset: Vector) -> AABB<f32> {
+        for axis in 0..3 {
+            self[axis] = self[axis].offset(offset[axis]);
+        }
+
+        self
+    }
+
+    pub fn to_corners<U: Unit<Scalar = f32>>(self) -> [Point3<U>; 8] {
+        let min = Point3::new(self.x.min, self.y.min, self.z.min);
+        let max = Point3::new(self.x.max, self.y.max, self.z.max);
+
+        [0, 1, 2, 3, 4, 5, 6, 7].map(|i| {
+            let mask = BVec3::new(i & 1 == 0, i & 2 == 0, i & 4 == 0);
+            Point3::select(mask, min, max)
+        })
     }
 }

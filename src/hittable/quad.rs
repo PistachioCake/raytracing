@@ -41,6 +41,43 @@ impl<'a> Quad<'a> {
             aabb,
         }
     }
+
+    pub fn new_box(a: Point, b: Point, material: &'a dyn Material) -> [Self; 6] {
+        let (min, max) = (a.min(b), a.max(b));
+        let Vector {
+            x: dx,
+            y: dy,
+            z: dz,
+        } = max - min;
+        let edges = [
+            Vector::new(dx, 0.0, 0.0),
+            Vector::new(0.0, dy, 0.0),
+            Vector::new(0.0, 0.0, dz),
+        ];
+
+        [
+            (0, false),
+            (0, true),
+            (1, false),
+            (1, true),
+            (2, false),
+            (2, true),
+        ]
+        .map(|(axis, top)| {
+            let mut vert = min;
+            let (u, v);
+            if top {
+                vert[axis] = max[axis];
+                u = edges[(axis + 1) % 3];
+                v = edges[(axis + 2) % 3];
+            } else {
+                u = edges[(axis + 2) % 3];
+                v = edges[(axis + 1) % 3];
+            }
+
+            Quad::new(vert, u, v, material)
+        })
+    }
 }
 
 impl<'a> Hittable for Quad<'a> {
