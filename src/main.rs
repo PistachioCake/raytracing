@@ -8,7 +8,7 @@ use rand::{thread_rng, Rng};
 use raytracing::{
     camera::CameraBuilder,
     hittable::{bvh::BvhNode, quad::Quad, Hittable, HittableList, Sphere},
-    material::{Dielectric, Lambertian, Material, Metal},
+    material::{Dielectric, DiffuseLight, Lambertian, Material, Metal},
     texture::{perlin::NoiseTexture, GlobalChecker, ImageTexture, SolidColor},
     time_utils::{Linear, Unchanging},
     units::{Color, Point, Vector},
@@ -29,12 +29,13 @@ fn main() {
         .with_max_depth(50)
         .with_background(Color::new(0.7, 0.8, 1.0));
 
-    let world = match 5 {
+    let world = match 6 {
         1 => random_spheres(),
         2 => two_spheres(),
         3 => earth(),
         4 => two_perlin_spheres(),
         5 => quads(&mut camera),
+        6 => simple_light(&mut camera),
         _ => unimplemented!(),
     };
 
@@ -43,11 +44,50 @@ fn main() {
     camera.render(world);
 }
 
-fn quads(camera: &mut CameraBuilder) -> &'static dyn Hittable {
-    fn leak<T>(x: T) -> &'static T {
-        Box::leak(Box::new(x))
-    }
+fn simple_light(camera: &mut CameraBuilder) -> &'static dyn Hittable {
+    let mut world = HittableList::with_capacity(3);
 
+    let noise = leak(NoiseTexture::new(4.0));
+    let sphere_mat = leak(Lambertian { albedo: noise });
+    let light_mat = leak(DiffuseLight::new_with_color(
+        Color::new(4.0, 4.0, 4.0),
+        Global::default(),
+    ));
+
+    world.add(leak(Sphere::<Unchanging>::new(
+        Point::new(0.0, -1000.0, 0.0),
+        1000.0,
+        sphere_mat,
+    )));
+    world.add(leak(Sphere::<Unchanging>::new(
+        Point::new(0.0, 2.0, 0.0),
+        2.0,
+        sphere_mat,
+    )));
+
+    world.add(leak(Sphere::<Unchanging>::new(
+        Point::new(0.0, 7.0, 0.0),
+        2.0,
+        light_mat,
+    )));
+    world.add(leak(Quad::new(
+        Point::new(3.0, 1.0, -2.0),
+        Vector::new(2.0, 0.0, 0.0),
+        Vector::new(0.0, 2.0, 0.0),
+        light_mat,
+    )));
+
+    camera
+        .with_lookfrom(Point::new(26.0, 3.0, 6.0))
+        .with_lookat(Point::new(0.0, 2.0, 0.0))
+        .with_samples_per_pixel(512)
+        .with_defocus_angle(0.0)
+        .with_background(Color::ZERO);
+
+    leak(world)
+}
+
+fn quads(camera: &mut CameraBuilder) -> &'static dyn Hittable {
     fn lambertian_with_color(color: Color) -> &'static Lambertian<'static> {
         leak(Lambertian {
             albedo: leak(SolidColor { color }),
@@ -107,10 +147,6 @@ fn quads(camera: &mut CameraBuilder) -> &'static dyn Hittable {
 }
 
 fn two_perlin_spheres() -> &'static dyn Hittable {
-    fn leak<T>(x: T) -> &'static T {
-        Box::leak(Box::new(x))
-    }
-
     let mut world = HittableList::with_capacity(2);
 
     let perlin = leak(NoiseTexture::new(4.0));
@@ -132,10 +168,6 @@ fn two_perlin_spheres() -> &'static dyn Hittable {
 }
 
 fn earth() -> &'static dyn Hittable {
-    fn leak<T>(x: T) -> &'static T {
-        Box::leak(Box::new(x))
-    }
-
     let earth_texture = leak(ImageTexture::from_path("images/earthmap.jpg").unwrap());
     let earth_surface = leak(Lambertian {
         albedo: earth_texture,
@@ -146,10 +178,6 @@ fn earth() -> &'static dyn Hittable {
 }
 
 fn two_spheres() -> &'static dyn Hittable {
-    fn leak<T>(x: T) -> &'static T {
-        Box::leak(Box::new(x))
-    }
-
     let mut world = HittableList::with_capacity(2);
 
     let checker = leak(GlobalChecker::new_colors(
@@ -264,4 +292,8 @@ fn random_spheres() -> &'static dyn Hittable {
     let world = BvhNode::new(objects, bump);
 
     bump.alloc(world)
+}
+
+fn leak<T>(x: T) -> &'static T {
+    Box::leak(Box::new(x))
 }

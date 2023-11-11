@@ -12,9 +12,9 @@ pub struct NoiseTexture {
 
 struct Perlin {
     ran_vec: [Vector3; Self::POINT_COUNT],
-    x: [u8; Self::POINT_COUNT + 1],
-    y: [u8; Self::POINT_COUNT + 1],
-    z: [u8; Self::POINT_COUNT + 1],
+    x: [u8; Self::POINT_COUNT],
+    y: [u8; Self::POINT_COUNT],
+    z: [u8; Self::POINT_COUNT],
 }
 
 impl NoiseTexture {
@@ -29,7 +29,8 @@ impl NoiseTexture {
 impl Texture for NoiseTexture {
     fn value(&self, _uv: TexCoord, point: Point) -> Color {
         let point = (point.to_vector() * self.scale).to_point();
-        Color::ONE * (self.noise.turb(point, 7))
+        // Color::ONE * (self.noise.turb(point, 7))
+        Color::ONE * 0.5 * (1.0 + f32::sin(1.0 + point.z + 10.0 * self.noise.turb(point, 7)))
     }
 }
 
@@ -42,9 +43,9 @@ impl Perlin {
 
         let mut this = Perlin {
             ran_vec: [Vector3::ZERO; Self::POINT_COUNT],
-            x: [0; Self::POINT_COUNT + 1],
-            y: [0; Self::POINT_COUNT + 1],
-            z: [0; Self::POINT_COUNT + 1],
+            x: [0; Self::POINT_COUNT],
+            y: [0; Self::POINT_COUNT],
+            z: [0; Self::POINT_COUNT],
         };
 
         let range = Uniform::new(-1.0, 1.0);
@@ -61,8 +62,8 @@ impl Perlin {
         this
     }
 
-    fn generate_perm(p: &mut [u8; Self::POINT_COUNT + 1], rng: &mut ThreadRng) {
-        for (i, p) in p[0..Self::POINT_COUNT].iter_mut().enumerate() {
+    fn generate_perm(p: &mut [u8; Self::POINT_COUNT], rng: &mut ThreadRng) {
+        for (i, p) in p.iter_mut().enumerate() {
             *p = i as _;
         }
 
@@ -72,8 +73,6 @@ impl Perlin {
             let target = rng.sample(range);
             p.swap(ix, target);
         }
-
-        p[Self::POINT_COUNT] = p[0];
     }
 
     fn noise(&self, p: Point) -> f32 {

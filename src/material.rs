@@ -137,7 +137,7 @@ impl<'a> DiffuseLight<'a> {
 }
 
 impl Material for DiffuseLight<'_> {
-    fn hit_info(&self, ray: &Ray, hit: &HitRecord) -> MatRecord {
+    fn hit_info(&self, _ray: &Ray, hit: &HitRecord) -> MatRecord {
         let color = self.emit.value(hit.uv, hit.p);
 
         MatRecord {

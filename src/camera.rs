@@ -12,8 +12,8 @@ use crate::{
 
 pub struct CameraBuilder {
     aspect_ratio: f32,
-    image_width: Option<i32>,
-    image_height: Option<i32>,
+    image_width: Option<usize>,
+    image_height: Option<usize>,
 
     vfov: f32,
     lookfrom: Point,
@@ -23,14 +23,14 @@ pub struct CameraBuilder {
     defocus_angle: f32,
     focus_dist: f32,
 
-    samples_per_pixel: i32,
-    max_depth: i32,
+    samples_per_pixel: usize,
+    max_depth: usize,
     background: Color,
 }
 
 pub struct Camera {
-    image_width: i32,
-    image_height: i32,
+    image_width: usize,
+    image_height: usize,
 
     center: Point,
 
@@ -42,8 +42,8 @@ pub struct Camera {
     defocus_disk_u: Vector,
     defocus_disk_v: Vector,
 
-    samples_per_pixel: i32,
-    max_depth: i32,
+    samples_per_pixel: usize,
+    max_depth: usize,
     background: Color,
 }
 
@@ -72,12 +72,12 @@ impl CameraBuilder {
         self
     }
 
-    pub fn with_image_width(&mut self, image_width: i32) -> &mut Self {
+    pub fn with_image_width(&mut self, image_width: usize) -> &mut Self {
         self.image_width = Some(image_width);
         self
     }
 
-    pub fn with_image_height(&mut self, image_height: i32) -> &mut Self {
+    pub fn with_image_height(&mut self, image_height: usize) -> &mut Self {
         self.image_height = Some(image_height);
         self
     }
@@ -112,12 +112,12 @@ impl CameraBuilder {
         self
     }
 
-    pub fn with_samples_per_pixel(&mut self, samples_per_pixel: i32) -> &mut Self {
+    pub fn with_samples_per_pixel(&mut self, samples_per_pixel: usize) -> &mut Self {
         self.samples_per_pixel = samples_per_pixel;
         self
     }
 
-    pub fn with_max_depth(&mut self, max_depth: i32) -> &mut Self {
+    pub fn with_max_depth(&mut self, max_depth: usize) -> &mut Self {
         self.max_depth = max_depth;
         self
     }
@@ -204,32 +204,28 @@ impl CameraBuilder {
 
 impl Camera {
     pub fn render(&self, world: &dyn Hittable) {
-        let image: Vec<_> = (0..self.image_height)
-            .into_par_iter()
+        let mut image = vec![Color::ZERO; self.image_height * self.image_width];
+        image
+            .par_chunks_mut(self.image_width)
             .progress()
-            .map(|j| {
-                let scanline: Vec<_> = (0..self.image_width)
-                    .map(|i| {
-                        let mut color = Color::ZERO;
-                        for _ in 0..self.samples_per_pixel {
-                            let ray = self.get_ray(i, j);
+            .enumerate()
+            .for_each(|(j, row)| {
+                for (i, pixel) in row.iter_mut().enumerate() {
+                    let mut color = Color::ZERO;
+                    for _ in 0..self.samples_per_pixel {
+                        let ray = self.get_ray(i, j);
 
-                            color +=
-                                Camera::ray_color(&ray, world, self.background, self.max_depth);
-                        }
+                        color += Camera::ray_color(&ray, world, self.background, self.max_depth);
+                    }
 
-                        color /= self.samples_per_pixel as f32;
+                    color /= self.samples_per_pixel as f32;
 
-                        // write_color(&mut stdout, color);
-                        color
-                    })
-                    .collect();
-                scanline
-            })
-            .collect();
+                    *pixel = color
+                }
+            });
+
         let stdout = std::io::stdout().lock();
         let mut stdout = BufWriter::new(stdout);
-        let mut stderr = std::io::stderr().lock();
 
         write!(
             stdout,
@@ -238,17 +234,15 @@ impl Camera {
         )
         .unwrap();
 
-        for line in image {
-            for col in line {
-                write_color(&mut stdout, col);
-            }
+        for pixel in image {
+            write_color(&mut stdout, pixel);
         }
 
         stdout.flush().unwrap();
-        write!(stderr, "\r{:30}\n", "Done.").unwrap();
+        eprintln!("Done.");
     }
 
-    fn get_ray(&self, i: i32, j: i32) -> Ray {
+    fn get_ray(&self, i: usize, j: usize) -> Ray {
         let pixel_center =
             self.pixel_00_loc + self.pixel_delta_u * i as f32 + self.pixel_delta_v * j as f32;
         let pixel_sample = pixel_center + self.pixel_sample_square();
@@ -272,8 +266,8 @@ impl Camera {
         self.center + self.defocus_disk_u * p.x + self.defocus_disk_v * p.y
     }
 
-    fn ray_color(ray: &Ray, world: &dyn Hittable, background: Color, depth: i32) -> Color {
-        if depth <= 0 {
+    fn ray_color(ray: &Ray, world: &dyn Hittable, background: Color, depth: usize) -> Color {
+        if depth == 0 {
             return Color::ZERO;
         }
 
