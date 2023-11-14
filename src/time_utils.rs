@@ -1,7 +1,7 @@
 use crate::{hittable::AABB, units::Point};
 
 pub trait Movement<T> {
-    type Storage: Send + Sync;
+    type Storage: Sync;
 
     fn get_at_time(this: &Self::Storage, time: f32) -> T;
     fn bounding_box(this: &Self::Storage) -> AABB<f32>;

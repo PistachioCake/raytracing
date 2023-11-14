@@ -14,7 +14,7 @@ pub struct MatRecord {
     pub emit: Option<Color>,
 }
 
-pub trait Material: Sync + Send {
+pub trait Material: Sync {
     fn hit_info(&self, ray: &Ray, hit: &HitRecord) -> MatRecord;
 }
 
@@ -46,7 +46,7 @@ impl Material for Lambertian<'_> {
     fn hit_info(&self, ray: &Ray, hit: &HitRecord) -> MatRecord {
         let direct = {
             let direct = hit.normal + random_unit_vector();
-            if direct.max_element() < f32::EPSILON {
+            if direct.abs().max_element() < f32::EPSILON {
                 hit.normal
             } else {
                 direct
@@ -56,7 +56,7 @@ impl Material for Lambertian<'_> {
         let scattered = Ray {
             origin: hit.p,
             direct,
-            time: ray.time,
+            ..*ray
         };
 
         let color = self.albedo.value(hit.uv, hit.p);

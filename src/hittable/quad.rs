@@ -98,7 +98,7 @@ impl<'a> Hittable for Quad<'a> {
         let alpha = self.w.dot(planar_hit.cross(self.v));
         let beta = self.w.dot(self.u.cross(planar_hit));
 
-        if !(0.0..1.0).contains(&alpha) || !(0.0..1.0).contains(&beta) {
+        if !(0.0..=1.0).contains(&alpha) || !(0.0..=1.0).contains(&beta) {
             return None;
         }
 

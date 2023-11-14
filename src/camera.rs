@@ -271,19 +271,21 @@ impl Camera {
             return Color::ZERO;
         }
 
-        if let Some(hit) = world.hit(ray, Interval::<f32>::POSITIVE) {
-            let hit_info = hit.mat.hit_info(ray, &hit);
-            let mut color = Color::ZERO;
+        match world.hit(ray, Interval::<f32>::POSITIVE) {
+            None => background,
+            Some(hit) => {
+                let hit_info = hit.mat.hit_info(ray, &hit);
+                let mut color = Color::ZERO;
 
-            if let Some((attenuation, scattered)) = hit_info.scatter {
-                color += Self::ray_color(&scattered, world, background, depth - 1) * attenuation;
+                if let Some((attenuation, scattered)) = hit_info.scatter {
+                    color +=
+                        Self::ray_color(&scattered, world, background, depth - 1) * attenuation;
+                }
+                if let Some(emit) = hit_info.emit {
+                    color += emit;
+                }
+                color
             }
-            if let Some(emit) = hit_info.emit {
-                color += emit;
-            }
-            color
-        } else {
-            background
         }
     }
 

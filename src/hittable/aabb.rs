@@ -130,7 +130,7 @@ impl AABB<f32> {
     }
 
     pub fn pad(mut self) -> Self {
-        let delta = f32::EPSILON;
+        let delta = 0.001;
 
         for axis in 0..3 {
             if self[axis].size() < delta {

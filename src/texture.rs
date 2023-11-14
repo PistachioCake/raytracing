@@ -6,7 +6,7 @@ use crate::units::{Color, Point, TexCoord};
 
 pub mod perlin;
 
-pub trait Texture: Sync + Send {
+pub trait Texture: Sync {
     fn value(&self, uv: TexCoord, point: Point) -> Color;
 }
 

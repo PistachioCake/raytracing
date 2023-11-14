@@ -24,7 +24,7 @@ pub struct HitRecord<'a> {
     pub front_face: bool,
 }
 
-pub trait Hittable: Sync + Send {
+pub trait Hittable: Sync {
     fn hit(&self, ray: &Ray, ray_t: Interval<f32>) -> Option<HitRecord>;
     fn bounding_box(&self) -> AABB<f32>;
 }
@@ -101,6 +101,10 @@ impl<'a> HittableList<'a> {
 
 impl Hittable for HittableList<'_> {
     fn hit(&self, ray: &Ray, mut ray_t: Interval<f32>) -> Option<HitRecord> {
+        if !self.aabb.hit(ray, ray_t) {
+            return None;
+        }
+
         let mut hit_record = None;
 
         for object in &self.objects {

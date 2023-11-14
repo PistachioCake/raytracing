@@ -54,12 +54,21 @@ fn cornell_box(camera: &mut CameraBuilder) -> &'static dyn Hittable {
     let bump = leak(Bump::new());
     let mut world = HittableList::with_capacity(12);
 
-    let red = lambertian_with_color(Color::new(0.65, 0.05, 0.05));
-    let white = lambertian_with_color(Color::new(0.73, 0.73, 0.74));
-    let green = lambertian_with_color(Color::new(0.12, 0.45, 0.15));
+    let red = bump.alloc(Lambertian::new_with_color(
+        Color::new(0.65, 0.05, 0.05),
+        bump,
+    ));
+    let white = bump.alloc(Lambertian::new_with_color(
+        Color::new(0.73, 0.73, 0.73),
+        bump,
+    ));
+    let green = bump.alloc(Lambertian::new_with_color(
+        Color::new(0.12, 0.45, 0.15),
+        bump,
+    ));
     let light = bump.alloc(DiffuseLight::new_with_color(
         Color::new(15.0, 15.0, 15.0),
-        Global::default(),
+        bump,
     ));
 
     world.add(bump.alloc(Quad::new(
@@ -105,10 +114,9 @@ fn cornell_box(camera: &mut CameraBuilder) -> &'static dyn Hittable {
             .map::<&'static dyn Hittable, _>(|face| bump.alloc(face))
             .collect(),
     );
-    world.add(bump.alloc(Translate::new(
-        bump.alloc(Rotate::<1>::new(bump.alloc(box1), 15.0)),
-        Vector::new(265.0, 0.0, 295.0),
-    )));
+    let box1 = Rotate::<1>::new(bump.alloc(box1), 15.0);
+    let box1 = Translate::new(bump.alloc(box1), Vector::new(265.0, 0.0, 295.0));
+    world.add(bump.alloc(box1));
 
     let box2 = Quad::new_box(Point::ZERO, Point::splat(165.0), white);
     let box2 = HittableList::from_vec(
@@ -116,18 +124,18 @@ fn cornell_box(camera: &mut CameraBuilder) -> &'static dyn Hittable {
             .map::<&'static dyn Hittable, _>(|face| bump.alloc(face))
             .collect(),
     );
-    world.add(bump.alloc(Translate::new(
-        bump.alloc(Rotate::<1>::new(bump.alloc(box2), -18.0)),
-        Vector::new(130.0, 0.0, 65.0),
-    )));
+    let box2 = Rotate::<1>::new(bump.alloc(box2), -18.0);
+    let box2 = Translate::new(bump.alloc(box2), Vector::new(130.0, 0.0, 65.0));
+    world.add(bump.alloc(box2));
 
     camera
         .with_aspect_ratio(1.0)
         .with_image_width(600)
         .with_samples_per_pixel(200)
+        .with_max_depth(50)
         .with_background(Color::ZERO)
         .with_vfov(40.0)
-        .with_lookfrom(Point::new(278.0, 278.0, -600.0))
+        .with_lookfrom(Point::new(278.0, 278.0, -800.0))
         .with_lookat(Point::new(278.0, 278.0, 0.0))
         .with_defocus_angle(0.0);
 
